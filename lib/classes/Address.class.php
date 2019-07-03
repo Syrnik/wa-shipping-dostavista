@@ -53,7 +53,8 @@ class Address
         $this->setCountry((string)Hash::get($Address, 'country'))
             ->setZip(trim((string)Hash::get($Address, 'zip')))
             ->setCity(trim((string)Hash::get($Address, 'city')))
-            ->setRegion(trim((string)Hash::get($Address, 'region')));
+            ->setRegion(trim((string)Hash::get($Address, 'region')))
+            ->setStreet(trim((string)Hash::get($Address, 'street')));
     }
 
     /**
@@ -277,7 +278,12 @@ class Address
      */
     public function __toString()
     {
-        return implode(', ', array_filter([$this->getZip(), $this->getRegionName(), $this->getCity(), $this->getStreet()]));
+        return implode(', ', array_filter([
+            $this->getZip(),
+            ($this->getSearchableCity() === 'москва' ? '' : $this->getRegionName()),
+            $this->getCity(),
+            $this->getStreet()
+        ]));
     }
 
     /**

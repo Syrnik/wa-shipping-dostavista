@@ -44,6 +44,19 @@ class dostavistaShipping extends waShipping
     }
 
     /**
+     * @return array
+     */
+    public function requestedAddressFields()
+    {
+        return [
+            'country' => ['hidden' => true, 'value' => 'rus'],
+            'region'  => ['cost' => true, 'required' => true],
+            'city'    => ['cost' => true, 'required' => true],
+            'street'  => ['cost' => true, 'required' => true]
+        ];
+    }
+
+    /**
      * @param mixed $data
      */
     private function sendJsonData($data)

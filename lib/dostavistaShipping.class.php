@@ -1,24 +1,46 @@
 <?php
+/**
+ * @author Serge Rodovnichenko <serge@syrnik.com>
+ * @copyright (c) 2019, Serge Rodovnichenko
+ * @license http://www.webasyst.com/terms/#eula Webasyst
+ */
 
 /**
- *
+ * @property-read string $token
  */
 class dostavistaShipping extends waShipping
 {
+    /**
+     * @return string
+     */
     protected function calculate()
     {
         //TODO put here code to calculate delivery cost
         return 'Calculate method not implemented yet';
     }
 
+    /**
+     * @return string
+     */
     public function allowedCurrency()
     {
-        return 'USD';
+        return 'RUB';
     }
 
+    /**
+     * @return string
+     */
     public function allowedWeightUnit()
     {
         return 'kg';
+    }
+
+    /**
+     * @return array
+     */
+    public function allowedAddress()
+    {
+        return [['country' => 'rus', 'region' => ['77', '50']]];
     }
 
     /**
@@ -55,5 +77,31 @@ class dostavistaShipping extends waShipping
             'errors' => array($error),
         );
         $this->sendJsonResponse($response);
+    }
+
+    /**
+     * @return string
+     */
+    protected function getDostavistaApiUrl()
+    {
+        return 'https://robotapitest.dostavista.ru/api/business/1.1';
+    }
+
+    /**
+     * @param $method
+     * @param $http_method
+     * @param array $data
+     * @param array $options
+     * @return array
+     * @throws waException
+     */
+    public function queryDostavistaApi($method, $http_method, array $data = [], array $options = [])
+    {
+        $url = ifset($options, 'api_url', $this->getDostavistaApiUrl()) . "/$method";
+        $token = ifset($options, 'token', $this->token);
+
+        $headers = ['X-DV-Auth-Token' => $token] + (array)ifset($options, 'headers', []);
+
+        return (new waNet(['format' => waNet::FORMAT_JSON, 'expected_http_code' => '200,400'], $headers))->query($url, $data, $http_method);
     }
 }

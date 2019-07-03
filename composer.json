@@ -1,0 +1,28 @@
+{
+  "name": "syrnik/shipping-dostavist",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Serge Rodovnichenko",
+      "email": "serge@syrnik.com"
+    }
+  ],
+  "config": {
+    "vendor-dir": "lib/vendors",
+    "platform": {
+      "php": "5.6.0"
+    },
+    "secure-http": false
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "http://satis.syrnik.com:8080/"
+    }
+  ],
+  "require": {
+    "serger/cake-utility": "^1",
+    "syrnik/wa-shipping-utils": "^1",
+    "serger/process-logger": "^1"
+  }
+}

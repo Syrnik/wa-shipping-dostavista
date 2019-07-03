@@ -57,6 +57,18 @@ class dostavistaShipping extends waShipping
     }
 
     /**
+     * @see waShipping::init()
+     */
+    protected function init()
+    {
+        require_once 'vendors/autoload.php';
+        parent::init();
+        waAutoload::getInstance()->add([
+            'Syrnik\\dostavistaShipping\\Address' => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
+        ]);
+    }
+
+    /**
      * @param mixed $data
      */
     private function sendJsonData($data)

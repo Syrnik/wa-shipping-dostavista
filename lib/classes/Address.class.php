@@ -213,24 +213,8 @@ class Address
 
     public function validate()
     {
-        $country = $this->getCountry();
-
-        if (empty($country)) {
-            return [
-                'code'    => self::ERR_VALIDATION_FATAL_RECOVERABLE,
-                'message' => 'Выберите страну доставки'
-            ];
-        }
-
-        if ($country !== 'rus') {
-            return [
-                'code'    => self::ERR_VALIDATION_FATAL_RECOVERABLE,
-                'message' => 'Расчёт доставки возможен только по РФ'
-            ];
-        }
-
         $empty_fileds = [];
-        $required_fields = ['country', 'city'];
+        $required_fields = ['country', 'region', 'city'];
 
         foreach ($required_fields as $field_id) {
             $getter = 'get' . ucfirst($field_id);
@@ -244,6 +228,23 @@ class Address
             return [
                 'code'    => self::ERR_VALIDATION_FATAL_RECOVERABLE,
                 'message' => sprintf("Нужно заполнить %s адреса %s", count($empty_fileds) > 1 ? 'поля' : 'поле', Text::toList($empty_fileds, 'и'))];
+        }
+
+        $country = $this->getCountry();
+
+        if ($country !== 'rus') {
+            return [
+                'code'    => self::ERR_VALIDATION_FATAL_RECOVERABLE,
+                'message' => 'Расчёт доставки возможен только по РФ'
+            ];
+        }
+
+        $region_code = $this->getRegionCode();
+        if (!in_array($region_code, ['77', '50'])) {
+            return [
+                'code'    => self::ERR_VALIDATION_FATAL_RECOVERABLE,
+                'message' => 'Расчёт доставки возможен только по Москве и Московской области'
+            ];
         }
 
         return true;

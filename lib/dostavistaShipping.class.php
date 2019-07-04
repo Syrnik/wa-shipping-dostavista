@@ -13,6 +13,12 @@ use Syrnik\dostavistaShipping\Address;
  */
 class dostavistaShipping extends waShipping
 {
+    /** @var waSmarty3View|null */
+    protected $_view;
+
+    /** @var waSystem|null */
+    protected $_system;
+
     /**
      * @return string|array|bool
      * @throws waException
@@ -199,5 +205,73 @@ class dostavistaShipping extends waShipping
     protected function getTotalWeight()
     {
         return max(1, ceil(parent::getTotalWeight()));
+    }
+
+    /**
+     * @param array $params
+     * @return string
+     */
+    public function getSettingsHTML($params = array())
+    {
+        $errors = [];
+        $settings = $this->getSettings();
+        $info = array(
+            'version'   => $this->getProperties('version'),
+            'build'     => $this->getProperties('build'),
+            'name'      => $this->getProperties('name'),
+            'namespace' => (string)Hash::get($params, 'namespace'),
+            'url'       => ['autocomplete' =>
+                                wa()->getRouteUrl(
+                                    sprintf("%s/frontend/shippingPlugin", $this->app_id),
+                                    ['plugin_id' => $this->key, 'action_id' => 'dispatchAutocomplete'],
+                                    true)],
+//            'callback_support' => $this->hasBackendSettingsSupport(),
+//            'callback_url'     => $this->getBackendSettingsCallbackUrl()
+        );
+        /* // размеры плагин не использует
+                try {
+                    $info['dimensions'] = $this->getAppDimensionSupport();
+                } catch (waException $e) {
+                    $info['dimensions'] = 'not_supported';
+                    $errors[] = ['code' => $e->getCode(), 'message' => $e->getMessage()];
+                }
+        */
+        $view = $this->getView();
+        $view->assign(compact('settings', 'info', 'errors'));
+        $view->assign(['plugin_id' => $this->id, 'plugin_js_object' => 'ShippingDostavistaPluginSettings']);
+
+        return $view->fetch($this->path . '/templates/settings.html');
+    }
+
+    /**
+     * @param bool $clean
+     * @return waSmarty3View
+     */
+    private function getView($clean = false)
+    {
+
+        if ($clean || !$this->_view) {
+            $view = new waSmarty3View($this->getSystem());
+            if (!$clean) {
+                $this->_view = $view;
+            }
+
+            return $view;
+        }
+
+        return $this->_view;
+    }
+
+    /**
+     * @return waSystem
+     */
+    private function getSystem()
+    {
+        if ($this->_system) {
+            return $this->_system;
+        }
+
+        $this->_system = wa();
+        return $this->_system;
     }
 }

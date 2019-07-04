@@ -216,15 +216,16 @@ class dostavistaShipping extends waShipping
         $errors = [];
         $settings = $this->getSettings();
         $info = array(
-            'version'   => $this->getProperties('version'),
-            'build'     => $this->getProperties('build'),
-            'name'      => $this->getProperties('name'),
-            'namespace' => (string)Hash::get($params, 'namespace'),
-            'url'       => ['autocomplete' =>
-                                wa()->getRouteUrl(
-                                    sprintf("%s/frontend/shippingPlugin", $this->app_id),
-                                    ['plugin_id' => $this->key, 'action_id' => 'dispatchAutocomplete'],
-                                    true)],
+            'version'                 => $this->getProperties('version'),
+            'build'                   => $this->getProperties('build'),
+            'name'                    => $this->getProperties('name'),
+            'namespace'               => (string)Hash::get($params, 'namespace'),
+            'use_address_suggestions' => $this->isDadataAppReady(),
+            'url'                     => ['autocomplete' =>
+                                              wa()->getRouteUrl(
+                                                  sprintf("%s/frontend/shippingPlugin", $this->app_id),
+                                                  ['plugin_id' => $this->key, 'action_id' => 'dispatchAutocomplete'],
+                                                  true)],
 //            'callback_support' => $this->hasBackendSettingsSupport(),
 //            'callback_url'     => $this->getBackendSettingsCallbackUrl()
         );
@@ -273,5 +274,19 @@ class dostavistaShipping extends waShipping
 
         $this->_system = wa();
         return $this->_system;
+    }
+
+    /**
+     * @return bool
+     */
+    private function isDadataAppReady()
+    {
+        try {
+            wa('alldadata');
+        } catch (Exception $e) {
+            return false;
+        }
+
+        return (new alldadataApi)->tokenAvailable();
     }
 }

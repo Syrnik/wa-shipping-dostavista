@@ -3,8 +3,8 @@
   "description": "Dostavista shipping plugin (non-official, 3rd party) interface for Webasyst",
   "license": "UNLICENSED",
   "scripts": {
-    "neograstin-shipping-settings-dev": "node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode development --display-error-details",
-    "neograstin-shipping-settings-prod": "node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode production --display-error-details"
+    "dostavista-shipping-settings-dev": "node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode development --display-error-details",
+    "dostavista-shipping-settings-prod": "node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode production --display-error-details"
   },
   "dependencies": {
     "vue": "^2.6.10",

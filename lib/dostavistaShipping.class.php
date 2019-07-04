@@ -5,18 +5,58 @@
  * @license http://www.webasyst.com/terms/#eula Webasyst
  */
 
+use SergeR\CakeUtility\Hash;
+use Syrnik\dostavistaShipping\Address;
+
 /**
  * @property-read string $token
  */
 class dostavistaShipping extends waShipping
 {
     /**
-     * @return string
+     * @return string|array|bool
+     * @throws waException
      */
     protected function calculate()
     {
-        //TODO put here code to calculate delivery cost
-        return 'Calculate method not implemented yet';
+        $address = new Address($this->getAddress());
+        if (($address_errors = $this->addressValidationErrors($address)) !== true) {
+            return $address_errors;
+        }
+
+        $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, [
+            'matter'          => 'Shopping',
+            'total_weight_kg' => (int)$this->getTotalWeight(),
+            'points'          => [
+                [
+                    'address' => 'Москва, Покровка, 11'
+                ],
+                [
+                    'address' => (string)$address
+                ]
+            ]
+        ]);
+
+        if (!$response['is_successful']) {
+            return [
+                'rate'    => null,
+                'comment' => 'Доставка по указанному адресу невозможна'
+            ];
+        }
+
+        $result = [
+            'dostavista_courier' => [
+                'rate'     => (float)Hash::get($response, 'order.payment_amount'),
+                'currency' => 'RUB'
+            ]
+        ];
+
+        if (($destination_address = (string)Hash::get($response, 'order.points.1.address'))) {
+            $result['dostavista_courier']['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
+        }
+
+
+        return $result;
     }
 
     /**
@@ -128,5 +168,36 @@ class dostavistaShipping extends waShipping
         $headers = ['X-DV-Auth-Token' => $token] + (array)ifset($options, 'headers', []);
 
         return (new waNet(['format' => waNet::FORMAT_JSON, 'expected_http_code' => '200,400'], $headers))->query($url, $data, $http_method);
+    }
+
+    /**
+     * @param Address $address
+     * @return array|bool
+     * @throws waException
+     */
+    protected function addressValidationErrors(Address $address)
+    {
+        if (($address_validation = $address->validate()) !== true) {
+            if (!is_array($address_validation)) {
+//                $this->logProcess('Проверка адреса вернула неожиданное значение: {data}', ['data' => var_export($address_validation, true)], 'flush');
+                return false;
+            }
+            if ($address_validation['code'] === Address::ERR_VALIDATION_FATAL_RECOVERABLE) {
+//                $this->logProcess('Исправимая ошибка проверки адреса: {msg}', ['msg' => $address_validation['message']], 'flush');
+                return [['rate' => null, 'comment' => $address_validation['message']]];
+            }
+//            $this->logProcess('Проверка полей дреса не пройдена: {data}', ['data' => var_export($address_validation, true)], 'flush');
+            throw new waException('Ошибка проверки полей адреса');
+        }
+
+        return true;
+    }
+
+    /**
+     * @return float
+     */
+    protected function getTotalWeight()
+    {
+        return max(1, ceil(parent::getTotalWeight()));
     }
 }

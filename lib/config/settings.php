@@ -1,4 +1,5 @@
 <?php
 return array(
-    'token' => ['value' => '']
+    'token'         => ['value' => ''],
+    'location_from' => ['value' => ['name' => '']]
 );

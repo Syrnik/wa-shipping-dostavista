@@ -10,6 +10,7 @@ use Syrnik\dostavistaShipping\Address;
 
 /**
  * @property-read string $token
+ * @property-read array $location_from = ['name'=>(string)]
  */
 class dostavistaShipping extends waShipping
 {
@@ -35,7 +36,7 @@ class dostavistaShipping extends waShipping
             'total_weight_kg' => (int)$this->getTotalWeight(),
             'points'          => [
                 [
-                    'address' => 'Москва, Покровка, 11'
+                    'address' => $this->location_from['name']
                 ],
                 [
                     'address' => (string)$address

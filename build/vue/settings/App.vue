@@ -10,6 +10,10 @@
                                v-model="token">
                     </div>
                 </wa-field>
+                <location-from name="Адрес отправки"
+                           :ns="addns('location_from', info.namespace)"
+                           v-model="location_from"
+                ></location-from>
             </tab>
             <tab name="Информация">
                 фывфыв
@@ -20,6 +24,7 @@
 
 <script>
     import AddNs from '../components/wa-namespace'
+    import LocationFrom from './LocationFrom.vue'
 
     export default {
         props: {
@@ -29,6 +34,7 @@
         mixins: [AddNs],
         data() {
             return this.settings
-        }
+        },
+        components: {LocationFrom}
     }
 </script>

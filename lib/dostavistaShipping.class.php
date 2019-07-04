@@ -226,8 +226,8 @@ class dostavistaShipping extends waShipping
                                                   sprintf("%s/frontend/shippingPlugin", $this->app_id),
                                                   ['plugin_id' => $this->key, 'action_id' => 'dispatchAutocomplete'],
                                                   true)],
-//            'callback_support' => $this->hasBackendSettingsSupport(),
-//            'callback_url'     => $this->getBackendSettingsCallbackUrl()
+            'callback_support'        => $this->hasBackendSettingsSupport(),
+            'callback_url'            => $this->getBackendSettingsCallbackUrl()
         );
         /* // размеры плагин не использует
                 try {
@@ -289,4 +289,23 @@ class dostavistaShipping extends waShipping
 
         return (new alldadataApi)->tokenAvailable();
     }
+
+    /**
+     * В плагине есть поддержка для колбэков из настроек
+     *
+     * @return bool
+     */
+    private function hasBackendSettingsSupport()
+    {
+        return $this->app_id === 'shop';
+    }
+
+    /**
+     * @return string|null
+     */
+    private function getBackendSettingsCallbackUrl()
+    {
+        return $this->hasBackendSettingsSupport() ? "?module=settings&action=shippingSetup&plugin_id={$this->id}" : null;
+    }
+
 }

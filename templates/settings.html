@@ -1,0 +1,33 @@
+<div id="{$plugin_id}-shipping-settings"></div>
+<style>
+    #shipping-{$plugin_id}-settings-app, #shipping-{$plugin_id}-settings-app .tabs-component, #shipping-{$plugin_id}-settings-app .tab-content {
+        box-sizing: border-box;
+    }
+    #shipping-{$plugin_id}-settings-app div.value.reloading {
+        position: absolute;
+        top: 0;
+        background: rgba(255,255,255,0.7) url('{$wa_static_url}wa-plugins/shipping/{$plugin_id}/img/ajax-loader.gif') left 10px top 10px no-repeat;
+        height: 100%;
+        width: 100%;
+    }
+    #shipping-{$plugin_id}-settings-app .sortable i.icon16.sort:hover { cursor: ns-resize }
+</style>
+<script type="text/javascript">
+    $(function () {
+        $.when($.Deferred(function (defer) {
+            if(typeof {$plugin_js_object} != 'undefined') {
+                defer.resolve();
+                return;
+            }
+            $.getScript('{$wa_static_url}wa-plugins/shipping/{$plugin_id}/js/settings.js').done(function () {
+                defer.resolve();
+            });
+        })).done(function () {
+            {$plugin_js_object}.run({
+                el: '#{$plugin_id}-shipping-settings',
+                info: {$info|json_encode},
+                settings: {$settings|json_encode}
+            });
+        });
+    })
+</script>

@@ -1,17 +1,18 @@
 <template>
-    <div id="shipping-neograstin-settings-app">
+    <div id="shipping-dostavista-settings-app">
         <tabs :options="{ useUrlFragment: false }">
             <tab name="Общие настройки">
-                <wa-field name="Город отправления">
+                <wa-field name="Токен API">
                     <div class="value">
-                        <select :name="addns('from_city', info.namespace)" v-model="from_city">
-                            <option value="Москва">Москва</option>
-                            <option value="Санкт-Петербург">Санкт-Петербург</option>
-                            <option value="Нижний Новгород">Нижний Новгород</option>
-                        </select></div>
+                        <input type="text"
+                               autocomplete="please no"
+                               :name="addns('token', info.namespace)"
+                               v-model="token">
+                    </div>
                 </wa-field>
             </tab>
             <tab name="Информация">
+                фывфыв
             </tab>
         </tabs>
     </div>
@@ -26,7 +27,6 @@
             settings: {type: Object, required: true}
         },
         mixins: [AddNs],
-        components: {Services, About},
         data() {
             return this.settings
         }

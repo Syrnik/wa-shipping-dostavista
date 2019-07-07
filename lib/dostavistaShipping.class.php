@@ -309,4 +309,56 @@ class dostavistaShipping extends waShipping
         return $this->hasBackendSettingsSupport() ? "?module=settings&action=shippingSetup&plugin_id={$this->id}" : null;
     }
 
+    /**
+     * @param array $data
+     * @return array
+     */
+    private function castCustomerInterval(array $data)
+    {
+        $data['date'] = (bool)Hash::get($data, 'date');
+        $data['interval'] = (bool)Hash::get($data, 'interval');
+        $_intervals = (array)Hash::get($data, 'intervals');
+        $data['intervals'] = array_map(function ($v) {
+            $v['from'] = sprintf('%02d', max(1, min(23, (int)Hash::get($v, 'from'))));
+            $v['to'] = sprintf('%02d', max(1, min(23, (int)Hash::get($v, 'to'))));
+            $v['from_m'] = sprintf('%02d', max(0, min(59, (int)Hash::get($v, 'from_m'))));
+            $v['to_m'] = sprintf('%02d', max(0, min(59, (int)Hash::get($v, 'to_m'))));
+            $v['workday'] = (bool)Hash::get($v, 'workday');
+            $v['holiday'] = (bool)Hash::get($v, 'holiday');
+            $v['day'] = array_map('intval', (array)Hash::get($v, 'day'));
+            return $v;
+        }, $_intervals);
+
+        return $data;
+    }
+
+    /**
+     * @param null $name
+     * @return array|string|void
+     */
+    public function getSettings($name = null)
+    {
+        $settings = parent::getSettings($name);
+
+        if ($name === 'customer_interval') {
+            return $this->castCustomerInterval($settings);
+        } elseif (($name === null) && isset($settings['customer_interval'])) {
+            $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
+        }
+        return $settings;
+    }
+
+    /**
+     * @param array $settings
+     * @return array
+     * @throws waException
+     */
+    public function saveSettings($settings = array())
+    {
+        if (isset($settings['customer_interval'])) {
+            $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
+        }
+        return parent::saveSettings($settings);
+    }
+
 }

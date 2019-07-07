@@ -7,13 +7,10 @@
                         <input type="text"
                                autocomplete="please no"
                                :name="addns('token', info.namespace)"
-                               v-model="token">
-                    </div>
-                </wa-field>
+                               v-model="token"></div></wa-field>
                 <location-from name="Адрес отправки"
                            :ns="addns('location_from', info.namespace)"
-                           v-model="location_from"
-                ></location-from>
+                           v-model="location_from"></location-from>
                 <delivery-time v-model="delivery_time" :ns="addns('delivery_time', info.namespace)"></delivery-time>
                 <wa-field name="Среднее количество часов доставки" v-show="delivery_time === 'exact_delivery_time'">
                     <div class="value">
@@ -23,9 +20,10 @@
                                v-model.number="exact_delivery_time"><br>
                         <span class="hint">Среднее время в часах, которое требуется курьеру для доставки заказа.
                             Оно прибавляется к общему времени готовности заказа с учетом значений в таблице
-                            «Интервалы доставки» с дополнительными выходными и рабочими днями.</span>
-                    </div>
-                </wa-field>
+                            «Интервалы доставки» с дополнительными выходными и рабочими днями.</span></div></wa-field>
+                <customer-interval v-model="customer_interval"
+                                   :ns="addns('customer_interval', info.namespace)"
+                                   name="Желаемое время доставки и график работы"></customer-interval>
             </tab>
             <tab name="Информация">
                 фывфыв
@@ -38,6 +36,7 @@
     import AddNs from '../components/wa-namespace'
     import LocationFrom from './LocationFrom.vue'
     import DeliveryTime from '../components/DeliveryTimeControl.vue'
+    import CustomerInterval from '../components/customer_interval/CustomerIntervalControl.vue'
 
     export default {
         props: {
@@ -48,6 +47,6 @@
         data() {
             return this.settings
         },
-        components: {LocationFrom, DeliveryTime}
+        components: {LocationFrom, DeliveryTime, CustomerInterval}
     }
 </script>

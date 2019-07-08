@@ -1,8 +1,8 @@
 <template>
     <wa-field :name="name">
         <div class="value no-shift">
-            <ul>
-                <li v-for="d in highlighted.dates">{{ d | DMYdate }}</li>
+            <ul class="vue-dates-list">
+                <li v-for="d in highlighted.dates" :class="listItemClass">{{ d | DMYdate }} <a href="#"><i class="icon10 no"></i></a></li>
             </ul>
         </div>
         <div class="value"><button
@@ -28,7 +28,8 @@
         props: {
             name: {type: String, default: ''},
             ns: {type: String, default: ''},
-            value: {type: Array, default: () => []}
+            value: {type: Array, default: () => []},
+            listItemClass: {type: String, default: ''}
         },
         mixins: [AddNs],
         components: {Datepicker},
@@ -64,3 +65,35 @@
         }
     }
 </script>
+
+<style lang="stylus" scoped>
+    .vue-dates-list
+        display inline
+        margin 0
+        list-style-type none
+        box-sizing border-box
+        padding 0
+
+        li
+            box-sizing border-box
+            margin 0 0.3em 0 0
+            padding 3px
+            border 1px solid transparent
+            font-size 12px
+            border-radius 3px
+            line-height 12px
+            height 20px
+            display inline-block
+
+            a
+                vertical-align middle
+                display inline-block
+                box-sizing border-box
+
+                i.icon10
+                    margin 0
+                    vertical-align initial
+                    line-height 10px
+                    box-sizing border-box
+
+</style>

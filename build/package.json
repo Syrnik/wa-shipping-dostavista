@@ -7,8 +7,11 @@
     "dostavista-shipping-settings-prod": "node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode production --display-error-details"
   },
   "dependencies": {
+    "dateformat": "^3.0.3",
+    "v-calendar": "^1.0.0-beta.14",
     "vue": "^2.6.10",
-    "vuedraggable": "^2.22.0"
+    "vuedraggable": "^2.22.0",
+    "vuejs-datepicker": "^1.6.2"
   },
   "devDependencies": {
     "@babel/core": "^7.5.0",
@@ -24,6 +27,7 @@
     "path": "^0.12.7",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
+    "terser-webpack-plugin": "^1.3.0",
     "uglifyjs-webpack-plugin": "^2.1.3",
     "vue-loader": "^15.7.0",
     "vue-template-compiler": "^2.6.10",

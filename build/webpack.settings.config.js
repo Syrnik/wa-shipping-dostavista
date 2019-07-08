@@ -1,5 +1,6 @@
 const {VueLoaderPlugin} = require('vue-loader');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+// const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 
 let config = {
     entry: './settings.js',
@@ -15,8 +16,11 @@ let config = {
         }
     },
     optimization: {
+        // minimizer: [
+        //     new UglifyJsPlugin({uglifyOptions: {mangle: true, output: {comments: false}, ecma: 5}})
+        // ]
         minimizer: [
-            new UglifyJsPlugin({uglifyOptions: {mangle: true, output: {comments: false}, ecma: 5}})
+            new TerserPlugin({terserOptions: {ecma: 5, output: {comments: false}}})
         ]
     },
     module: {

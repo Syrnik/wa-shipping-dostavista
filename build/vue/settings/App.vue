@@ -24,6 +24,10 @@
                 <customer-interval v-model="customer_interval"
                                    :ns="addns('customer_interval', info.namespace)"
                                    name="Желаемое время доставки и график работы"></customer-interval>
+                <dates class="holidays" name="Дополнительные выходные" :value="['2019-07-16']"></dates>
+                <dates name="Дополнительные рабочие дни"></dates>
+                <wa-field name="Наценка"></wa-field>
+                <wa-field name="Искючения"></wa-field>
             </tab>
             <tab name="Информация">
                 фывфыв
@@ -37,6 +41,7 @@
     import LocationFrom from './LocationFrom.vue'
     import DeliveryTime from '../components/DeliveryTimeControl.vue'
     import CustomerInterval from '../components/customer_interval/CustomerIntervalControl.vue'
+    import Dates from '../components/dates/Dates.vue'
 
     export default {
         props: {
@@ -47,6 +52,6 @@
         data() {
             return this.settings
         },
-        components: {LocationFrom, DeliveryTime, CustomerInterval}
+        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates}
     }
 </script>

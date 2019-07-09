@@ -18,5 +18,7 @@ return array(
                 'holiday' => false
             ]
         ]
-    ]]
+    ]],
+    'holidays'            => ['value' => []],
+    'workdays'            => ['value' => []]
 );

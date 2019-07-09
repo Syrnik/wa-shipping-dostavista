@@ -2,7 +2,7 @@
     <wa-field :name="name">
         <div class="value no-shift">
             <ul class="vue-dates-list">
-                <li v-for="d in highlighted.dates" :class="listItemClass">{{ d | DMYdate }} <a href="#"><i class="icon10 no"></i></a></li>
+                <li v-for="(d, idx) in highlighted.dates" :class="listItemClass"><input type="hidden" :name="addns(idx, ns)" :value="YMDdate(d)">{{ d | DMYdate }} <a href="#"><i class="icon10 no"></i></a></li>
             </ul>
         </div>
         <div class="value"><button
@@ -61,6 +61,10 @@
                     else
                         this.selected_dates.splice(idx, 1);
                 }
+            },
+            YMDdate(v) {
+                if (!(v instanceof Date) || isNaN(v)) return '';
+                return dateformat(v, 'yyyy-mm-dd')
             }
         }
     }

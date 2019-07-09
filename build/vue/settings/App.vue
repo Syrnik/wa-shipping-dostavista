@@ -24,8 +24,14 @@
                 <customer-interval v-model="customer_interval"
                                    :ns="addns('customer_interval', info.namespace)"
                                    name="Желаемое время доставки и график работы"></customer-interval>
-                <dates class="holidays" name="Дополнительные выходные" :value="['2019-07-16']"></dates>
-                <dates name="Дополнительные рабочие дни"></dates>
+                <dates class="holidays"
+                       name="Дополнительные выходные"
+                       v-model="holidays"
+                       :ns="addns('holidays', info.namespace)"></dates>
+                <dates class="workdays"
+                       name="Дополнительные рабочие дни"
+                       v-model="workdays"
+                       :ns="addns('workdays', info.namespace)"></dates>
                 <wa-field name="Наценка"></wa-field>
                 <wa-field name="Искючения"></wa-field>
             </tab>

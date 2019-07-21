@@ -11,6 +11,18 @@ use Syrnik\dostavistaShipping\Address;
 /**
  * @property-read string $token
  * @property-read array $location_from = ['name'=>(string)]
+ * @property-read string $delivery_time Время доставки
+ * @property-read int $exact_delivery_time Среднее количество часов доставки (если выбрано Время Доставки - указанное
+ *     кол-во часов
+ * @property-read array<date:bool, interval:bool, intervals:array{<
+ *      from:string,
+ *      from_m: string,
+ *      to: string,
+ *      to_m: string,
+ *      day: array<int>,
+ *      workday: bool,
+ *      holiday: bool
+ * >}> $customer_interval
  */
 class dostavistaShipping extends waShipping
 {
@@ -310,6 +322,8 @@ class dostavistaShipping extends waShipping
     }
 
     /**
+     * Приводит содержимое настройки с интервалами к нужному типу
+     *
      * @param array $data
      * @return array
      */
@@ -340,11 +354,27 @@ class dostavistaShipping extends waShipping
     {
         $settings = parent::getSettings($name);
 
-        if ($name === 'customer_interval') {
-            return $this->castCustomerInterval($settings);
-        } elseif (($name === null) && isset($settings['customer_interval'])) {
-            $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
+        $castingFn = function ($key, $data) {
+            switch ($key) {
+                case 'customer_interval':
+                    $data = $this->castCustomerInterval((array)$data);
+                    break;
+                case 'exact_delivery_time':
+                    $data = (int)$data;
+                    break;
+            }
+
+            return $data;
+        };
+
+        if ($name === null) {
+            foreach ($settings as $key => $setting) {
+                $settings[$key] = $castingFn($key, $setting);
+            }
+        } else {
+            $settings = $castingFn($name, $settings);
         }
+
         return $settings;
     }
 

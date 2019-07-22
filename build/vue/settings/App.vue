@@ -38,6 +38,7 @@
                        name="Дополнительные рабочие дни"
                        v-model="workdays"
                        :ns="addns('workdays', info.namespace)"></dates>
+                <insurance field="insurance" v-model="insurance" :ns="info.namespace"></insurance>
                 <wa-field name="Наценка"></wa-field>
                 <wa-field name="Искючения"></wa-field>
             </tab>
@@ -54,6 +55,7 @@
     import DeliveryTime from '../components/DeliveryTimeControl.vue'
     import CustomerInterval from '../components/customer_interval/CustomerIntervalControl.vue'
     import Dates from '../components/dates/Dates.vue'
+    import Insurance from '../components/insurance-setting.vue'
 
     export default {
         props: {
@@ -64,6 +66,6 @@
         data() {
             return this.settings
         },
-        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates}
+        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance}
     }
 </script>

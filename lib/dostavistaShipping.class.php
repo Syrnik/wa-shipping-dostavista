@@ -7,6 +7,7 @@
 
 use SergeR\CakeUtility\Hash;
 use Syrnik\dostavistaShipping\Address;
+use Webit\Util\EvalMath\EvalMath;
 
 /**
  * @property-read string $token
@@ -28,6 +29,7 @@ use Syrnik\dostavistaShipping\Address;
  *          holiday: bool
  *      }>
  * } $customer_interval
+ * @property-read array{type:string, value:string] $insurance
  * @property-read array<string> $holidays
  * @property-read array<string> $workdays
  */
@@ -53,18 +55,23 @@ class dostavistaShipping extends waShipping
             return $address_errors;
         }
 
-        $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, [
-            'matter'          => 'Shopping',
-            'total_weight_kg' => (int)$this->getTotalWeight(),
-            'points'          => [
-                [
-                    'address' => $this->location_from['name']
-                ],
-                [
-                    'address' => (string)$address
+        $response = $this->queryDostavistaApi(
+            'calculate-order',
+            waNet::METHOD_POST,
+            [
+                'matter'          => 'Shopping',
+                'total_weight_kg' => (int)$this->getTotalWeight(),
+                'points'          => [
+                    [
+                        'address' => $this->location_from['name']
+                    ],
+                    [
+                        'address' => (string)$address
+                    ]
                 ]
             ]
-        ]);
+            + $this->getInsuranceQueryField()
+        );
 
         if (!$response['is_successful']) {
             return [
@@ -632,5 +639,46 @@ class dostavistaShipping extends waShipping
         }
 
         return $result;
+    }
+
+    /**
+     * Настройка с оценочной стоимостию (стоимостью страховки)
+     * Выдаёт массив со значением для добавления к запросу
+     *
+     * @return array
+     */
+    protected function getInsuranceQueryField()
+    {
+        switch ($this->insurance['type']) {
+            case 'raw':
+                return ['insurance_amount' => number_format($this->getTotalRawPrice(), 2, '.', '')];
+                break;
+            case 'total':
+                return ['insurance_amount' => number_format($this->getTotalPrice(), 2, '.', '')];
+                break;
+            case 'custom':
+                $formula = trim($this->insurance['value']);
+                if(!strlen($formula)) {
+                    break;
+                }
+                $formula = strtolower($formula);
+                $formula = str_replace(',', '.', $formula);
+                if((strpos($formula, 'w')===false) && (strpos($formula, 't')===false)) {
+                    return ['insurance_amount' => number_format((float)$formula, 2, '.', '')];
+                    break;
+                }
+                $math = new EvalMath();
+                $math->suppress_errors = true;
+                $math->evaluate('w=' . str_replace(',', '.', $this->getTotalRawPrice()));
+                $math->evaluate('t=' . str_replace(',', '.', $this->getTotalPrice()));
+                $value = $math->evaluate($formula);
+                if($value === false) {
+                    //todo log
+                }
+                return ['insurance_amount' => number_format((float)$value, 2, '.', '')];
+                break;
+        }
+
+        return [];
     }
 }

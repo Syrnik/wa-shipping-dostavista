@@ -21,5 +21,6 @@ return array(
         ]
     ]],
     'holidays'            => ['value' => []],
-    'workdays'            => ['value' => []]
+    'workdays'            => ['value' => []],
+    'insurance'           => ['value' => ['type' => 'none', 'value' => '']]
 );

@@ -75,7 +75,8 @@ class dostavistaShipping extends waShipping
         $result = [
             'dostavista_courier' => [
                 'rate'     => (float)Hash::get($response, 'order.payment_amount'),
-                'currency' => 'RUB'
+                'currency' => 'RUB',
+                'type'     => waShipping::TYPE_TODOOR
             ]
         ];
 
@@ -83,6 +84,48 @@ class dostavistaShipping extends waShipping
             $result['dostavista_courier']['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
         }
 
+        $delivery_times = $this->getDeliveryTimes();
+        $result['dostavista_courier']['est_delivery'] = $delivery_times['estimate'];
+
+        $setting = $this->customer_interval;
+        if(!empty($setting['intervals'])) {
+            $intervals=[];
+            $date_format = waDateTime::getFormat('date');
+            $offset = null;
+
+            foreach ($setting['intervals'] as $interval) {
+                $interval = $this->getInterval($interval, $delivery_times['timestamp']);
+
+                if (!empty($interval['start_date'])) {
+                    $key = $interval['interval'];
+                    $intervals[$key] = array_keys($interval['day']);
+                    $intervals[$key]['offset'] = $interval['offset'];
+                    if (!isset($result['dostavista_courier']['delivery_date'])
+                        || (strtotime($result['dostavista_courier']['delivery_date']) > strtotime($interval['start_date']))
+                    ) {
+                        $delivery['delivery_date'] = $interval['start_date'];
+                    }
+
+                    if (($offset === null) || ($offset > $interval['offset'])) {
+                        $offset = $interval['offset'];
+                    }
+                }
+            }
+
+            $custom_data = array(
+                'offset'      => $offset,
+                'intervals'   => $intervals,
+                'placeholder' => waDateTime::format($date_format, $delivery['delivery_date']),
+                'holidays'    => '',
+                'workdays'    => '',
+            );
+            $result['dostavista_courier'] += array(
+                'custom_data' => array(
+                    self::TYPE_TODOOR => $custom_data,
+                ),
+            );
+
+        }
 
         return $result;
     }

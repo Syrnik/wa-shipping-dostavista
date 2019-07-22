@@ -38,6 +38,13 @@
                        name="Дополнительные рабочие дни"
                        v-model="workdays"
                        :ns="addns('workdays', info.namespace)"></dates>
+                <wa-field name="Наложенный платёж">
+                    <div class="value no-shift">
+                        <input type="hidden" :name="addns('cash_on_delivery', info.namespace)" value="0">
+                        <label><input type="checkbox" :name="addns('cash_on_delivery', info.namespace)" v-model="cash_on_delivery" value="1"></label>
+                    </div>
+                    <div class="value"><span class="hint">Если включить, то для расчёта будет также передана стоимость заказа (без учёта доставки), которую нужно получить у клиента. Возможно, это окажен влияние на стоимость доставки.</span></div>
+                </wa-field>
                 <insurance field="insurance" v-model="insurance" :ns="info.namespace"></insurance>
                 <wa-field name="Наценка"></wa-field>
                 <wa-field name="Искючения"></wa-field>

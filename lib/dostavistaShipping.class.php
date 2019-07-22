@@ -29,6 +29,7 @@ use Webit\Util\EvalMath\EvalMath;
  *          holiday: bool
  *      }>
  * } $customer_interval
+ * @property-read bool $cash_on_delivery
  * @property-read array{type:string, value:string] $insurance
  * @property-read array<string> $holidays
  * @property-read array<string> $workdays
@@ -67,7 +68,7 @@ class dostavistaShipping extends waShipping
                     ],
                     [
                         'address' => (string)$address
-                    ]
+                    ] + $this->getCashOnDeliveryQueryField()
                 ]
             ]
             + $this->getInsuranceQueryField()
@@ -422,6 +423,9 @@ class dostavistaShipping extends waShipping
                 case 'exact_delivery_time':
                     $data = (int)$data;
                     break;
+                case 'cash_on_delivery':
+                    $data = (bool)$data;
+                    break;
             }
 
             return $data;
@@ -448,6 +452,7 @@ class dostavistaShipping extends waShipping
         if (isset($settings['customer_interval'])) {
             $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
         }
+        $settings['cash_on_delivery'] = (bool)ifset($settings, 'cash_on_delivery', false);
         return parent::saveSettings($settings);
     }
 
@@ -658,12 +663,12 @@ class dostavistaShipping extends waShipping
                 break;
             case 'custom':
                 $formula = trim($this->insurance['value']);
-                if(!strlen($formula)) {
+                if (!strlen($formula)) {
                     break;
                 }
                 $formula = strtolower($formula);
                 $formula = str_replace(',', '.', $formula);
-                if((strpos($formula, 'w')===false) && (strpos($formula, 't')===false)) {
+                if ((strpos($formula, 'w') === false) && (strpos($formula, 't') === false)) {
                     return ['insurance_amount' => number_format((float)$formula, 2, '.', '')];
                     break;
                 }
@@ -672,7 +677,7 @@ class dostavistaShipping extends waShipping
                 $math->evaluate('w=' . str_replace(',', '.', $this->getTotalRawPrice()));
                 $math->evaluate('t=' . str_replace(',', '.', $this->getTotalPrice()));
                 $value = $math->evaluate($formula);
-                if($value === false) {
+                if ($value === false) {
                     //todo log
                 }
                 return ['insurance_amount' => number_format((float)$value, 2, '.', '')];
@@ -680,5 +685,16 @@ class dostavistaShipping extends waShipping
         }
 
         return [];
+    }
+
+    /**
+     * Возвращает сумму наложки для получения с клиента в виде массива для добавления к point
+     * при расчёте
+     *
+     * @return array
+     */
+    protected function getCashOnDeliveryQueryField()
+    {
+        return $this->cash_on_delivery ? ['taking_amount' => number_format($this->getTotalPrice(), 2, '.', '')] : [];
     }
 }

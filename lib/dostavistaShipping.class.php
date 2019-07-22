@@ -82,6 +82,11 @@ class dostavistaShipping extends waShipping
 
         if (($destination_address = (string)Hash::get($response, 'order.points.1.address'))) {
             $result['dostavista_courier']['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
+            $result = Hash::insert(
+                $result,
+                'dostavista_courier.custom_data.' . waShipping::TYPE_TODOOR,
+                ['additional' => "Доставка курьером по адресу: " . waString::escapeAll($destination_address)]
+            );
         }
 
         $delivery_times = $this->getDeliveryTimes();
@@ -116,15 +121,10 @@ class dostavistaShipping extends waShipping
                 'offset'      => $offset,
                 'intervals'   => $intervals,
                 'placeholder' => waDateTime::format($date_format, $delivery['delivery_date']),
-                'holidays'    => '',
-                'workdays'    => '',
+                'holidays'    => $this->holidays,
+                'workdays'    => $this->workdays,
             );
-            $result['dostavista_courier'] += array(
-                'custom_data' => array(
-                    self::TYPE_TODOOR => $custom_data,
-                ),
-            );
-
+            $result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR] = (array)Hash::get($result, 'dostavista_courier.custom_data.' . waShipping::TYPE_TODOOR) + $custom_data;
         }
 
         return $result;

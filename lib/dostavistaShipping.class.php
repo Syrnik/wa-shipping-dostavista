@@ -14,15 +14,21 @@ use Syrnik\dostavistaShipping\Address;
  * @property-read string $delivery_time Время доставки
  * @property-read int $exact_delivery_time Среднее количество часов доставки (если выбрано Время Доставки - указанное
  *     кол-во часов
- * @property-read array<date:bool, interval:bool, intervals:array{<
- *      from:string,
- *      from_m: string,
- *      to: string,
- *      to_m: string,
- *      day: array<int>,
- *      workday: bool,
- *      holiday: bool
- * >}> $customer_interval
+ * @property-read array{
+ *     date: bool,
+ *     interval: bool,
+ *     intervals: array<array{
+ *          from: string,
+ *          from_m: string,
+ *          to: string,
+ *          to_m: string,
+ *          day: array<int>,
+ *          workday: bool,
+ *          holiday: bool
+ *      }>
+ * } $customer_interval
+ * @property-read array<string> $holidays
+ * @property-read array<string> $workdays
  */
 class dostavistaShipping extends waShipping
 {
@@ -31,6 +37,9 @@ class dostavistaShipping extends waShipping
 
     /** @var waSystem|null */
     protected $_system;
+
+    /** @var null|array{time:int, holidays:array<string>, workdays:array<string>} */
+    protected $_schedule;
 
     /**
      * @return string|array|bool
@@ -391,4 +400,193 @@ class dostavistaShipping extends waShipping
         return parent::saveSettings($settings);
     }
 
+    /**
+     * @param waOrder $order
+     * @return array
+     * @throws waException
+     */
+    public function customFields(waOrder $order)
+    {
+        $fields = parent::customFields($order);
+        $setting = $this->customer_interval;
+
+        if (!empty($this->customer_interval['interval']) || !empty($this->customer_interval['date'])) {
+            $from = (!strlen($this->delivery_time) || ($this->delivery_time === 'exact_delivery_time')) ? time() : strtotime(preg_replace('/,.+$/', '', $this->delivery_time));
+            $offset = max(0, round(($from - time()) / (24 * 3600)));
+            $shipping_params = $order->shipping_params;
+            $value = array();
+
+            if (!empty($shipping_params['desired_delivery.interval'])) {
+                $value['interval'] = $shipping_params['desired_delivery.interval'];
+            }
+            if (!empty($shipping_params['desired_delivery.date_str'])) {
+                $value['date_str'] = $shipping_params['desired_delivery.date_str'];
+            }
+            if (!empty($shipping_params['desired_delivery.date'])) {
+                $value['date'] = $shipping_params['desired_delivery.date'];
+            }
+
+            if (!empty($setting['intervals'])) {
+                $delivery_times = $this->getDeliveryTimes();
+                foreach ($setting['intervals'] as &$interval) {
+                    $interval = $this->getInterval($interval, $delivery_times['timestamp']);
+                }
+                unset($interval);
+            }
+
+            $params = [
+                'date'      => empty($this->customer_interval['date']) ? null : (int)$offset,
+                'interval'  => ifset($setting['interval']),
+                'intervals' => ifset($setting['intervals']),
+                'holidays'  => $this->holidays,
+                'workdays'  => $this->workdays
+            ];
+
+            $fields['desired_delivery'] = [
+                'value'        => $value,
+                'title'        => 'Желательное время доставки',
+                'control_type' => waHtmlControl::DATETIME,
+                'params'       => $params
+            ];
+
+        }
+
+        return $fields;
+    }
+
+    /**
+     * @return array{timestamp:int|array<int>, estimate:string}
+     * @throws waException
+     */
+    protected function getDeliveryTimes()
+    {
+        if (!$this->delivery_time) {
+            return ['timestamp' => null, 'estimate' => null];
+        }
+
+        /** @var string $departure_datetime SQL DATETIME */
+        $departure_datetime = $this->getPackageProperty('departure_datetime');
+
+        $departure_timestamp = $departure_datetime ? max(0, strtotime($departure_datetime) - $this->getSchedule()['time']) : 0;
+
+        if ('exact_delivery_time' === $this->delivery_time) {
+            $delivery_date = [
+                $this->getSchedule()['time'] + max(0, $this->exact_delivery_time) * 3600 + $departure_timestamp,
+            ];
+        } else {
+            $delivery_date = array_map('strtotime', explode(',', $this->delivery_time, 2));
+            foreach ($delivery_date as & $date) {
+                $date += $departure_timestamp;
+            }
+            unset($date);
+            $delivery_date = array_unique($delivery_date);
+        }
+
+        $est_delivery = array();
+        foreach ($delivery_date as $date) {
+            $est_delivery[] = waDateTime::format('humandate', $date);
+        }
+        $est_delivery = implode(' — ', $est_delivery);
+
+        if (count($delivery_date) == 1) {
+            $delivery_date = reset($delivery_date);
+        }
+
+        return array(
+            'timestamp' => $delivery_date,
+            'estimate'  => $est_delivery,
+        );
+    }
+
+    /**
+     * @return array{time:int, holidays:array<string>, workdays:array<string>}
+     */
+    protected function getSchedule()
+    {
+        if ($this->_schedule === null) {
+            $this->_schedule['holidays'] = $this->holidays;
+            $this->_schedule['workdays'] = $this->workdays;
+            $this->_schedule['time'] = time();
+        }
+
+        return $this->_schedule;
+    }
+
+    /**
+     * @param array{
+     *          from: string,
+     *          from_m: string,
+     *          to: string,
+     *          to_m: string,
+     *          day: array<int>,
+     *          workday: bool,
+     *          holiday: bool
+     *      } $interval
+     * @param int $timestamp
+     * @return array{
+     *     offset: int,
+     *     from: string,
+     *     to: string,
+     *     interval: string,
+     *     days: array,
+     *     start_date: string
+     * }
+     */
+    protected function getInterval($interval, $timestamp)
+    {
+        $result = [
+            'offset'   => 0,
+            'from'     => sprintf('%02d:%02d', $interval['from'], $interval['from_m']),
+            'to'       => sprintf('%02d:%02d', $interval['to'], $interval['to_m'])
+        ];
+        $result['interval'] = sprintf('%s-%s', $result['from'], $result['to']);
+
+        $start = is_array($timestamp) ? reset($timestamp) : $timestamp;
+
+        do {
+            $service_datetime = strtotime(sprintf('+%d days', $result['offset']++), $start);
+            $service_date = date('Y-m-d', $service_datetime);
+            $week_day = date('N', $service_datetime);
+            $is_holiday = in_array($service_date, $this->holidays, true);
+            $is_extra_holiday = $is_holiday && $interval['holiday'];
+
+            if (!$is_holiday || $is_extra_holiday) {
+
+                $is_extra_workday = $interval['workday'] && in_array($service_date, $this->workdays, true);
+                $is_workday = $is_extra_holiday || $is_extra_workday || in_array($week_day, $interval['day']);
+
+                if ($is_workday) {
+                    $is_same_day = date('Y-m-d', $this->time) === $service_date;
+                    if ($is_same_day) {
+                        if ((int)date('H', $this->time) >= (int)$interval['to']) {
+                            continue;
+                        }
+                    }
+                    $service_delivery_date = $service_date;
+                    $service_delivery_date .= sprintf(' %02d:00', $interval['from']);
+                }
+            }
+            if ($result['offset'] > 60) {
+                break;
+            }
+        } while (empty($service_delivery_date));
+
+        $_days = [];
+        foreach ($interval['day'] as $key => $value) {
+            $_days[$value - 1] = 1;
+        }
+
+        $result['day'] = $_days;
+
+        $result['start_date'] = date('Y-m-d', strtotime($service_delivery_date));
+        if ($interval['holiday']) {
+            $result['day']['holiday'] = 1;
+        }
+
+        if ($interval['workday']) {
+            $result['day']['workday'] = 1;
+        }
+
+        return $result;
+    }
 }

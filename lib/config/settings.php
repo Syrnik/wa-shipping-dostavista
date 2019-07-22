@@ -2,6 +2,7 @@
 return array(
     'token'               => ['value' => ''],
     'location_from'       => ['value' => ['name' => '']],
+    'api_server'          => ['value' => 'test'],
     'delivery_time'       => ['value' => ''],
     'exact_delivery_time' => ['value' => 2],
     'customer_interval'   => ['value' => [

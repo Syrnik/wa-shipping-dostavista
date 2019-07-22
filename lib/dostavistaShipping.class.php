@@ -11,6 +11,7 @@ use Syrnik\dostavistaShipping\Address;
 /**
  * @property-read string $token
  * @property-read array $location_from = ['name'=>(string)]
+ * @property-read string $api_server = 'test'|'production'
  * @property-read string $delivery_time Время доставки
  * @property-read int $exact_delivery_time Среднее количество часов доставки (если выбрано Время Доставки - указанное
  *     кол-во часов
@@ -93,8 +94,8 @@ class dostavistaShipping extends waShipping
         $result['dostavista_courier']['est_delivery'] = $delivery_times['estimate'];
 
         $setting = $this->customer_interval;
-        if(!empty($setting['intervals'])) {
-            $intervals=[];
+        if (!empty($setting['intervals'])) {
+            $intervals = [];
             $date_format = waDateTime::getFormat('date');
             $offset = null;
 
@@ -220,7 +221,7 @@ class dostavistaShipping extends waShipping
      */
     protected function getDostavistaApiUrl()
     {
-        return 'https://robotapitest.dostavista.ru/api/business/1.1';
+        return $this->api_server === 'production' ? 'https://robot.dostavista.ru/api/business/1.1' : 'https://robotapitest.dostavista.ru/api/business/1.1';
     }
 
     /**
@@ -578,9 +579,9 @@ class dostavistaShipping extends waShipping
     protected function getInterval($interval, $timestamp)
     {
         $result = [
-            'offset'   => 0,
-            'from'     => sprintf('%02d:%02d', $interval['from'], $interval['from_m']),
-            'to'       => sprintf('%02d:%02d', $interval['to'], $interval['to_m'])
+            'offset' => 0,
+            'from'   => sprintf('%02d:%02d', $interval['from'], $interval['from_m']),
+            'to'     => sprintf('%02d:%02d', $interval['to'], $interval['to_m'])
         ];
         $result['interval'] = sprintf('%s-%s', $result['from'], $result['to']);
 

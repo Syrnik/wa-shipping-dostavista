@@ -11,6 +11,12 @@
                 <location-from name="Адрес отправки"
                            :ns="addns('location_from', info.namespace)"
                            v-model="location_from"></location-from>
+                <wa-field name="Сервер API">
+                    <div class="value no-shift">
+                        <label><input type="radio" :name="addns('api_server', info.namespace)" v-model="api_server" value="test"> Тестовый</label></div>
+                    <div class="value">
+                        <label><input type="radio" :name="addns('api_server', info.namespace)" v-model="api_server" value="production"> Рабочий</label></div>
+                </wa-field>
                 <delivery-time v-model="delivery_time" :ns="addns('delivery_time', info.namespace)"></delivery-time>
                 <wa-field name="Среднее количество часов доставки" v-show="delivery_time === 'exact_delivery_time'">
                     <div class="value">

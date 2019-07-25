@@ -7,6 +7,7 @@
 
 use SergeR\CakeUtility\Hash;
 use Syrnik\dostavistaShipping\Address;
+use Syrnik\WaShippingUtils;
 use Webit\Util\EvalMath\EvalMath;
 
 /**
@@ -416,28 +417,10 @@ class dostavistaShipping extends waShipping
     {
         $settings = parent::getSettings($name);
 
-        $castingFn = function ($key, $data) {
-            switch ($key) {
-                case 'customer_interval':
-                    $data = $this->castCustomerInterval((array)$data);
-                    break;
-                case 'exact_delivery_time':
-                    $data = (int)$data;
-                    break;
-                case 'cash_on_delivery':
-                    $data = (bool)$data;
-                    break;
-            }
-
-            return $data;
-        };
-
         if ($name === null) {
-            foreach ($settings as $key => $setting) {
-                $settings[$key] = $castingFn($key, $setting);
-            }
+            $settings = $this->_typecastSettings($settings);
         } else {
-            $settings = $castingFn($name, $settings);
+            $settings = $this->_typecastSettings([$name => $settings])[$name];
         }
 
         return $settings;
@@ -454,6 +437,9 @@ class dostavistaShipping extends waShipping
             $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
         }
         $settings['cash_on_delivery'] = (bool)ifset($settings, 'cash_on_delivery', false);
+
+        $settings = $this->_typecastSettings($settings);
+
         return parent::saveSettings($settings);
     }
 
@@ -501,7 +487,7 @@ class dostavistaShipping extends waShipping
 
             $fields['desired_delivery'] = [
                 'value'        => $value,
-                'title'        => 'Желательное время доставки',
+                'title'        => 'Желаемое время доставки',
                 'control_type' => waHtmlControl::DATETIME,
                 'params'       => $params
             ];
@@ -509,6 +495,39 @@ class dostavistaShipping extends waShipping
         }
 
         return $fields;
+    }
+
+    /**
+     * @param array $settings
+     * @return array
+     */
+    protected function _typecastSettings(array $settings)
+    {
+        foreach ($settings as $key => $data) {
+            switch ($key) {
+                case 'customer_interval':
+                    $data = $this->castCustomerInterval((array)$data);
+                    break;
+                case 'exact_delivery_time':
+                    $data = (int)$data;
+                    break;
+                case 'cash_on_delivery':
+                    $data = (bool)$data;
+                    break;
+                case 'free_delivery':
+                    if (is_string($data)) {
+                        $data = trim($data);
+                        $data = strlen($data) ? WaShippingUtils::strToFloat($data) : null;
+                    }
+                    break;
+                case 'surcharge':
+                    $data = trim($data);
+                    break;
+            }
+            $settings[$key] = $data;
+        }
+
+        return $settings;
     }
 
     /**

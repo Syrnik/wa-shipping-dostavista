@@ -184,7 +184,8 @@ class dostavistaShipping extends waShipping
         require_once 'vendors/autoload.php';
         parent::init();
         waAutoload::getInstance()->add([
-            'Syrnik\\dostavistaShipping\\Address' => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
+            'Syrnik\\dostavistaShipping\\Address'   => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
+            'Syrnik\\dostavistaShipping\\Surcharge' => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
         ]);
     }
 

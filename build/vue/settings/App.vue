@@ -66,7 +66,7 @@
                 <location-rule name="Ограничения по географии" field="location_rule" :ns="info.namespace" v-model="location_rule"></location-rule>
             </tab>
             <tab name="Информация">
-                фывфыв
+                <about-page :info="info"></about-page>
             </tab>
         </tabs>
     </div>
@@ -80,6 +80,7 @@
     import Dates from '../components/dates/Dates.vue'
     import Insurance from '../components/insurance-setting.vue'
     import LocationRule from "../components/LocationRule.vue";
+    import AboutPage from "../components/about/AboutPage.vue";
 
     export default {
         props: {
@@ -90,6 +91,6 @@
         data() {
             return this.settings
         },
-        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule}
+        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule, AboutPage}
     }
 </script>

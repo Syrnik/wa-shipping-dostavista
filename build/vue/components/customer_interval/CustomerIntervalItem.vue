@@ -1,13 +1,13 @@
 <template>
     <tr>
-        <td>с <input type="text"
+        <td class="nowrap">с <input type="text"
                      class="short numerical"
                      :name="addns('from', ns)"
                      v-model="value.from"> : <input type="text"
                                                     class="short numerical"
                                                     :name="addns('from_m', ns)"
                                                     v-model="value.from_m"></td>
-        <td>до <input
+        <td class="nowrap">до <input
                 type="text"
                 class="short numerical"
                 :name="addns('to', ns)"

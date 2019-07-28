@@ -44,7 +44,7 @@
                         <label><input type="checkbox" :name="addns('cash_on_delivery', info.namespace)" v-model="cash_on_delivery" value="1"></label>
                     </div>
                     <div class="value"><span
-                            class="hint">Если включить, то для расчёта будет также передана стоимость заказа (без учёта доставки), которую нужно получить у клиента. Возможно, это окажен влияние на стоимость доставки.</span></div></wa-field>
+                            class="hint">Если включить, то для расчёта будет также передана стоимость заказа (без учёта доставки), которую нужно получить у клиента. Возможно, это окажет влияние на стоимость доставки.</span></div></wa-field>
                 <insurance field="insurance" v-model="insurance" :ns="info.namespace"></insurance>
                 <wa-field name="Корректировка стоимости доставки"><div
                         class="value no-shift"><input

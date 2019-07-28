@@ -43,10 +43,26 @@
                         <input type="hidden" :name="addns('cash_on_delivery', info.namespace)" value="0">
                         <label><input type="checkbox" :name="addns('cash_on_delivery', info.namespace)" v-model="cash_on_delivery" value="1"></label>
                     </div>
-                    <div class="value"><span class="hint">Если включить, то для расчёта будет также передана стоимость заказа (без учёта доставки), которую нужно получить у клиента. Возможно, это окажен влияние на стоимость доставки.</span></div>
-                </wa-field>
+                    <div class="value"><span
+                            class="hint">Если включить, то для расчёта будет также передана стоимость заказа (без учёта доставки), которую нужно получить у клиента. Возможно, это окажен влияние на стоимость доставки.</span></div></wa-field>
                 <insurance field="insurance" v-model="insurance" :ns="info.namespace"></insurance>
-                <wa-field name="Наценка"></wa-field>
+                <wa-field name="Корректировка стоимости доставки"><div
+                        class="value no-shift"><input
+                        type="text"
+                        class="long"
+                        :name="addns('surcharge', info.namespace)"
+                        placeholder="S"
+                        v-model.trim="surcharge"><br><span
+                        class="hint">Фиксированная стоимость или формула для наценки/скидки на расчётную стоимсть доставки. Можно оставить пустым, тогда будет использоваться стоимость, посчитанная через API. Доступные переменные: S — стоимость доставки, почитанная плагином, Z — стоимость заказа с учётом скидок, W — стоимость заказа без учёта скидок.</span></div></wa-field>
+                <wa-field name="Порог бесплатной доставки">
+                    <div class="value no-shift"><input
+                            type="number"
+                            class="short"
+                            placeholder="Нет"
+                            v-model.number="free_delivery"
+                            min="0" step="0.01"
+                            :name="addns('free_delivery', info.namespace)"><br><span
+                            class="hint">Если сумма заказа больше либо равна указанной, то доставка в ПВЗ будет бесплатной. Оставьте поле пустым, если доставка всегда платная. Поставьте 0, если доставка всегда бесплатная.</span></div></wa-field>
                 <wa-field name="Искючения"></wa-field>
             </tab>
             <tab name="Информация">

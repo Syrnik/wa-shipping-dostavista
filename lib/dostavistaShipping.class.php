@@ -7,6 +7,7 @@
 
 use SergeR\CakeUtility\Hash;
 use Syrnik\dostavistaShipping\Address;
+use Syrnik\dostavistaShipping\Surcharge;
 use Syrnik\WaShippingUtils;
 use Webit\Util\EvalMath\EvalMath;
 
@@ -57,10 +58,7 @@ class dostavistaShipping extends waShipping
             return $address_errors;
         }
 
-        $response = $this->queryDostavistaApi(
-            'calculate-order',
-            waNet::METHOD_POST,
-            [
+        $query = [
                 'matter'          => 'Shopping',
                 'total_weight_kg' => (int)$this->getTotalWeight(),
                 'points'          => [
@@ -72,8 +70,9 @@ class dostavistaShipping extends waShipping
                     ] + $this->getCashOnDeliveryQueryField()
                 ]
             ]
-            + $this->getInsuranceQueryField()
-        );
+            + $this->getInsuranceQueryField();
+
+        $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, $query);
 
         if (!$response['is_successful']) {
             return [
@@ -84,11 +83,19 @@ class dostavistaShipping extends waShipping
 
         $result = [
             'dostavista_courier' => [
-                'rate'     => (float)Hash::get($response, 'order.payment_amount'),
+                'rate'     => round((float)Hash::get($response, 'order.payment_amount'), 2),
                 'currency' => 'RUB',
                 'type'     => waShipping::TYPE_TODOOR
             ]
         ];
+
+        $result['dostavista_courier']['rate'] = (new Surcharge([
+            'CalculatedDeliveryCost' => $result['dostavista_courier']['rate'],
+            'OrderTotal'             => $this->getTotalPrice(),
+            'OrderRawTotal'          => $this->getTotalRawPrice(),
+            'FreeDelivery'           => $this->getSettings('free_delivery')
+        ]))->setFormula($this->getSettings('surcharge'))
+            ->calculate();
 
         if (($destination_address = (string)Hash::get($response, 'order.points.1.address'))) {
             $result['dostavista_courier']['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);

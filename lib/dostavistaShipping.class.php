@@ -77,7 +77,15 @@ class dostavistaShipping extends waShipping
             ]
             + $this->getInsuranceQueryField();
 
-        $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, $query);
+        $cache = $this->getInstanceCache();
+        $cache_group = $this->getInstanceCacheGroup('calc');
+        $cache_key = $this->getInstanceCacheKeyForCalc($query);
+
+        $response = $cache->get($cache_key, $cache_group);
+        if(!is_array($response)) {
+            $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, $query);
+            $cache->set($cache_key, $response, 600, $cache_group);
+        }
 
         if (!$response['is_successful']) {
             return [
@@ -197,8 +205,8 @@ class dostavistaShipping extends waShipping
         require_once 'vendors/autoload.php';
         parent::init();
         waAutoload::getInstance()->add([
-            'Syrnik\\dostavistaShipping\\Address'       => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
-            'Syrnik\\dostavistaShipping\\Surcharge'     => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php"
+            'Syrnik\\dostavistaShipping\\Address'   => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
+            'Syrnik\\dostavistaShipping\\Surcharge' => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php"
         ]);
     }
 

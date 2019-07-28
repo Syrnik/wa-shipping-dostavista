@@ -7,6 +7,7 @@
 
 use SergeR\CakeUtility\Hash;
 use Syrnik\dostavistaShipping\Address;
+use Syrnik\dostavistaShipping\InstanceCache;
 use Syrnik\dostavistaShipping\Surcharge;
 use Syrnik\WaShippingUtils;
 use Webit\Util\EvalMath\EvalMath;
@@ -38,6 +39,8 @@ use Webit\Util\EvalMath\EvalMath;
  */
 class dostavistaShipping extends waShipping
 {
+    use InstanceCache;
+
     /** @var waSmarty3View|null */
     protected $_view;
 
@@ -192,8 +195,9 @@ class dostavistaShipping extends waShipping
         require_once 'vendors/autoload.php';
         parent::init();
         waAutoload::getInstance()->add([
-            'Syrnik\\dostavistaShipping\\Address'   => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
-            'Syrnik\\dostavistaShipping\\Surcharge' => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
+            'Syrnik\\dostavistaShipping\\Address'       => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
+            'Syrnik\\dostavistaShipping\\Surcharge'     => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
+            'Syrnik\\dostavistaShipping\\InstanceCache' => "wa-plugins/shipping/dostavista/lib/classes/InstanceCache.trait.php",
         ]);
     }
 
@@ -723,5 +727,21 @@ class dostavistaShipping extends waShipping
     protected function getCashOnDeliveryQueryField()
     {
         return $this->cash_on_delivery ? ['taking_amount' => number_format($this->getTotalPrice(), 2, '.', '')] : [];
+    }
+
+    /**
+     * Изготавливает ключ для кэширования результата запроса на расчёт
+     *
+     * @param $query
+     * @return string
+     */
+    private function getInstanceCacheKeyForCalc($query)
+    {
+        $query['points'] = array_map(function ($v) {
+            $v['address'] = WaShippingUtils::mb_trim(mb_strtolower($v['address'], 'UTF-8'));
+            return $v;
+        }, $query['points']);
+
+        return md5(waUtils::jsonEncode($query));
     }
 }

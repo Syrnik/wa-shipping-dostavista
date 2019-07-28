@@ -38,6 +38,7 @@ use Webit\Util\EvalMath\EvalMath;
  * @property-read array{type:string, value:string] $insurance
  * @property-read array<string> $holidays
  * @property-read array<string> $workdays
+ * @property-read array{type:string, value:string} $location_rule
  */
 class dostavistaShipping extends waShipping
 {
@@ -63,6 +64,13 @@ class dostavistaShipping extends waShipping
             return $address_errors;
         }
 
+        if (!$this->isAllowedAddress(['country' => 'rus', 'city' => $address->getCity(), 'region' => $address->getRegionCode()])) {
+            return [
+                'rate'    => null,
+                'comment' => 'Доставка по указанному адресу невозможна'
+            ];
+        }
+
         $query = [
                 'matter'          => 'Shopping',
                 'total_weight_kg' => (int)$this->getTotalWeight(),
@@ -82,7 +90,7 @@ class dostavistaShipping extends waShipping
         $cache_key = $this->getInstanceCacheKeyForCalc($query);
 
         $response = $cache->get($cache_key, $cache_group);
-        if(!is_array($response)) {
+        if (!is_array($response)) {
             $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, $query);
             $cache->set($cache_key, $response, 600, $cache_group);
         }
@@ -182,6 +190,29 @@ class dostavistaShipping extends waShipping
     public function allowedAddress()
     {
         return [['country' => 'rus', 'region' => ['77', '50']]];
+    }
+
+    /**
+     * @param array $address
+     * @return bool
+     */
+    public function isAllowedAddress($address = array())
+    {
+        $allowed = parent::isAllowedAddress($address);
+        if (!$allowed) {
+            return $allowed;
+        }
+
+        if (empty($address)) {
+            $address = $this->getAddress();
+        }
+
+        $city = (string)ifset($address, 'city', '');
+        $region_code = (string)ifset($address, 'region', '');
+
+        $met_conditions = WaShippingUtils::isBannedLocation($city, $region_code, $this->getSettings('location_rule')['value']);
+
+        return $this->getSettings('location_rule')['value'] === 'except' ? $met_conditions : !$met_conditions;
     }
 
     /**
@@ -527,6 +558,15 @@ class dostavistaShipping extends waShipping
             switch ($key) {
                 case 'customer_interval':
                     $data = $this->castCustomerInterval((array)$data);
+                    break;
+                case 'location_rule':
+                    $type = (string)ifset($data, 'type', 'except');
+                    $value = (string)ifset($data, 'value', '');
+                    $type = trim(strtolower($type));
+                    if (!in_array($type, ['except', 'only'])) {
+                        $type = 'except';
+                    }
+                    $data = ['type' => $type, 'value' => WaShippingUtils::mb_trim($value)];
                     break;
                 case 'exact_delivery_time':
                     $data = (int)$data;

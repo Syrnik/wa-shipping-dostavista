@@ -63,7 +63,7 @@
                             min="0" step="0.01"
                             :name="addns('free_delivery', info.namespace)"><br><span
                             class="hint">Если сумма заказа больше либо равна указанной, то доставка в ПВЗ будет бесплатной. Оставьте поле пустым, если доставка всегда платная. Поставьте 0, если доставка всегда бесплатная.</span></div></wa-field>
-                <wa-field name="Искючения"></wa-field>
+                <location-rule name="Ограничения по географии" field="location_rule" :ns="info.namespace" v-model="location_rule"></location-rule>
             </tab>
             <tab name="Информация">
                 фывфыв
@@ -79,6 +79,7 @@
     import CustomerInterval from '../components/customer_interval/CustomerIntervalControl.vue'
     import Dates from '../components/dates/Dates.vue'
     import Insurance from '../components/insurance-setting.vue'
+    import LocationRule from "../components/LocationRule.vue";
 
     export default {
         props: {
@@ -89,6 +90,6 @@
         data() {
             return this.settings
         },
-        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance}
+        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule}
     }
 </script>

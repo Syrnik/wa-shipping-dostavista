@@ -25,5 +25,6 @@ return array(
     'cash_on_delivery'    => ['value' => false],
     'insurance'           => ['value' => ['type' => 'none', 'value' => '']],
     'surcharge'           => ['value' => ''],
-    'free_delivery'       => ['value' => null]
+    'free_delivery'       => ['value' => null],
+    'location_rule'       => ['value' => ['type' => 'except', 'value' => '']]
 );

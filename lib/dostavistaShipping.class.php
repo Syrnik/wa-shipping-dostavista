@@ -5,6 +5,8 @@
  * @license http://www.webasyst.com/terms/#eula Webasyst
  */
 
+require_once 'classes/InstanceCache.trait.php';
+
 use SergeR\CakeUtility\Hash;
 use Syrnik\dostavistaShipping\Address;
 use Syrnik\dostavistaShipping\InstanceCache;
@@ -196,8 +198,7 @@ class dostavistaShipping extends waShipping
         parent::init();
         waAutoload::getInstance()->add([
             'Syrnik\\dostavistaShipping\\Address'       => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
-            'Syrnik\\dostavistaShipping\\Surcharge'     => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
-            'Syrnik\\dostavistaShipping\\InstanceCache' => "wa-plugins/shipping/dostavista/lib/classes/InstanceCache.trait.php",
+            'Syrnik\\dostavistaShipping\\Surcharge'     => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php"
         ]);
     }
 

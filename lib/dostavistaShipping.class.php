@@ -82,9 +82,11 @@ class dostavistaShipping extends waShipping
         }
 
         $query = [
-                'matter'          => 'Shopping',
-                'total_weight_kg' => (int)$this->getTotalWeight(),
-                'points'          => [
+                'matter'                                 => 'Shopping',
+                'total_weight_kg'                        => (int)$this->getTotalWeight(),
+                'is_client_notification_enabled'         => $this->sms_notify['client'],
+                'is_contact_person_notification_enabled' => $this->getContactPersonNotificationOption(),
+                'points'                                 => [
                     [
                         'address' => $this->location_from['name']
                     ],
@@ -611,6 +613,16 @@ class dostavistaShipping extends waShipping
 
         }
 
+//        if (in_array($this->sms_notify['receiver'], ['ask_yes', 'ask_no'])) {
+//            $fields['sms_notification'] = [
+//                'title'        => 'SMS уведомление',
+//                'label'        => 'Отправить SMS с интервалом прибытия и телефоном курьера',
+//                'control_type' => waHtmlControl::CHECKBOX,
+//                'value'        => ifset($shipping_params, 'sms_notification', '0') ? '1' : '0',
+//                'data'         => ['affects-rate' => true]
+//            ];
+//        }
+
         return $fields;
     }
 
@@ -868,5 +880,21 @@ class dostavistaShipping extends waShipping
         }, $query['points']);
 
         return md5(waUtils::jsonEncode($query));
+    }
+
+    /**
+     * Потом сделаем возможность выбора покупателем
+     *
+     * @return bool
+     */
+    private function getContactPersonNotificationOption()
+    {
+        switch ($this->sms_notify['receiver']) {
+            case 'yes':
+                return true;
+                break;
+        }
+
+        return false;
     }
 }

@@ -317,7 +317,7 @@ class dostavistaShipping extends waShipping
         if (waRequest::isXMLHttpRequest()) {
             wa()->getResponse()->addHeader('Content-Type', 'application/json')->sendHeaders();
         }
-        echo json_encode($response);
+        echo waUtils::jsonEncode($response);
         exit;
     }
 

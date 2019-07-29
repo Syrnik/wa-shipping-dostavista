@@ -62,7 +62,7 @@ class dostavistaShipping extends waShipping
      */
     protected function calculate()
     {
-        $this->startLogger(waSystemConfig::isDebug() ? LogLevel::INFO : LogLevel::ALERT);
+        $this->startLogger(waSystemConfig::isDebug() ? ( $this->detailed_log ? LogLevel::DEBUG : LogLevel::INFO) : LogLevel::ALERT);
         $this->logProcess('start');
 
         $address = new Address($this->getAddress());
@@ -94,7 +94,7 @@ class dostavistaShipping extends waShipping
             ]
             + $this->getInsuranceQueryField();
 
-        $this->logProcess('custom', ['message' => "Данные для запроса\n{data}", 'data' => ['data' => var_export($query, true)], 'loglevel' => LogLevel::DEBUG]);
+        $this->logProcess('json_dump', ['message' => "Данные для запроса\n{json}", 'data' => $query]);
 
         $cache = $this->getInstanceCache();
         $cache_group = $this->getInstanceCacheGroup('calc');
@@ -116,7 +116,7 @@ class dostavistaShipping extends waShipping
             $this->logProcess('custom', ['message' => 'Результат расчёта извлечён из кэша', 'loglevel' => LogLevel::INFO]);
         }
 
-        $this->logProcess('custom', ['message' => "Ответ сервера Dostavista:\n{data}", 'data' => ['data' => $response], 'loglevel' => LogLevel::DEBUG]);
+        $this->logProcess('json_dump', ['message' => "Ответ сервера Dostavista:\n{json}", 'data' => $response]);
 
         if (!$response['is_successful']) {
             $this->logProcess('flush', ['message' => 'Расчёт доставки не удался', 'loglevel' => LogLevel::INFO]);

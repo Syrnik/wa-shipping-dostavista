@@ -9,6 +9,7 @@ namespace Syrnik\dostavistaShipping;
 
 use Exception;
 use Psr\Log\LogLevel;
+use waUtils;
 
 /**
  * Class LoggerActionFormatter
@@ -132,5 +133,19 @@ class LoggerActionFormatter
         $options['loglevel'] = ifset($options, 'loglevel', LogLevel::ERROR);
 
         return $options;
+    }
+
+    public static function JsonDump(array $options = [])
+    {
+        $data = ifset($options, 'data', '__нет данных__');
+        $data = waUtils::jsonEncode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        $message = (string)ifset($options, 'message', "Данные:\n{json}");
+        $loglevel = (string)ifset($options, 'loglevel', LogLevel::DEBUG);
+
+        return [
+            'message'  => $message,
+            'data'     => ['json' => $data],
+            'loglevel' => $loglevel
+        ];
     }
 }

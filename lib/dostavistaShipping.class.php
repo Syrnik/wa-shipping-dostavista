@@ -6,10 +6,13 @@
  */
 
 require_once 'classes/InstanceCache.trait.php';
+require_once 'classes/LoggerForShippingPlugins.trait.php';
 
+use Psr\Log\LogLevel;
 use SergeR\CakeUtility\Hash;
 use Syrnik\dostavistaShipping\Address;
 use Syrnik\dostavistaShipping\InstanceCache;
+use Syrnik\dostavistaShipping\LoggerForShippingPlugins;
 use Syrnik\dostavistaShipping\Surcharge;
 use Syrnik\WaShippingUtils;
 use Webit\Util\EvalMath\EvalMath;
@@ -42,7 +45,7 @@ use Webit\Util\EvalMath\EvalMath;
  */
 class dostavistaShipping extends waShipping
 {
-    use InstanceCache;
+    use InstanceCache, LoggerForShippingPlugins;
 
     /** @var waSmarty3View|null */
     protected $_view;
@@ -55,16 +58,21 @@ class dostavistaShipping extends waShipping
 
     /**
      * @return string|array|bool
-     * @throws waException
      */
     protected function calculate()
     {
+        $this->startLogger(waSystemConfig::isDebug() ? LogLevel::INFO : LogLevel::ALERT);
+        $this->logProcess('start');
+
         $address = new Address($this->getAddress());
+        $this->logProcess('address', ['data' => ['address' => $address]]);
+
         if (($address_errors = $this->addressValidationErrors($address)) !== true) {
             return $address_errors;
         }
 
         if (!$this->isAllowedAddress(['country' => 'rus', 'city' => $address->getCity(), 'region' => $address->getRegionCode()])) {
+            $this->logProcess('flush', ['message' => 'Доставка в город запрещена правилом или регион не подошёл', 'loglevel' => LogLevel::INFO]);
             return [
                 'rate'    => null,
                 'comment' => 'Доставка по указанному адресу невозможна'
@@ -85,17 +93,32 @@ class dostavistaShipping extends waShipping
             ]
             + $this->getInsuranceQueryField();
 
+        $this->logProcess('custom', ['message' => "Данные для запроса\n{data}", 'data' => ['data' => var_export($query, true)], 'loglevel' => LogLevel::DEBUG]);
+
         $cache = $this->getInstanceCache();
         $cache_group = $this->getInstanceCacheGroup('calc');
         $cache_key = $this->getInstanceCacheKeyForCalc($query);
 
         $response = $cache->get($cache_key, $cache_group);
         if (!is_array($response)) {
-            $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, $query);
+            $this->logProcess('start_timer', ['data' => ['name' => 'calc']]);
+            try {
+                $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, $query);
+            } catch (Exception $e) {
+                $this->logProcess('exception', ['data' => ['exception' => $e], 'loglevel' => LogLevel::CRITICAL]);
+                $this->logProcess('flush', ['data' => ['message' => 'Ошибка при выполнении запроса к серверу. Окончание']]);
+                return 'Ошибка расчёта';
+            }
+            $this->logProcess('end_timer', ['data' => ['name' => 'calc'], 'message' => 'Запрос к серверу Dostavista выполнен за {total}с.', 'loglevel' => LogLevel::INFO]);
             $cache->set($cache_key, $response, 600, $cache_group);
+        } else {
+            $this->logProcess('custom', ['message' => 'Результат расчёта извлечён из кэша', 'loglevel' => LogLevel::INFO]);
         }
 
+        $this->logProcess('custom', ['message' => "Ответ сервера Dostavista:\n{data}", 'data' => ['data' => $response], 'loglevel' => LogLevel::DEBUG]);
+
         if (!$response['is_successful']) {
+            $this->logProcess('flush', ['message' => 'Расчёт доставки не удался', 'loglevel' => LogLevel::INFO]);
             return [
                 'rate'    => null,
                 'comment' => 'Доставка по указанному адресу невозможна'
@@ -110,13 +133,22 @@ class dostavistaShipping extends waShipping
             ]
         ];
 
-        $result['dostavista_courier']['rate'] = (new Surcharge([
+        $surcharge = (new Surcharge([
             'CalculatedDeliveryCost' => $result['dostavista_courier']['rate'],
             'OrderTotal'             => $this->getTotalPrice(),
             'OrderRawTotal'          => $this->getTotalRawPrice(),
             'FreeDelivery'           => $this->getSettings('free_delivery')
-        ]))->setFormula($this->getSettings('surcharge'))
-            ->calculate();
+        ]))->setFormula($this->getSettings('surcharge'));
+        $this->logProcess('surcharge', ['data' => ['surcharge' => $surcharge]]);
+
+        try {
+            $result['dostavista_courier']['rate'] = $surcharge->calculate();
+            $this->logProcess('custom', ['message' => 'Итоговая стоимость доставки: {price}', 'data' => ['price' => number_format($result['dostavista_courier']['rate'], 2, '.', '')], 'loglevel' => LogLevel::INFO]);
+        } catch (waException $e) {
+            $this->logProcess('exception', ['data' => ['exception' => $e]]);
+            $this->logProcess('flush', ['message' => 'Расчёт прерван']);
+            return 'Ошибка расчёта';
+        }
 
         if (($destination_address = (string)Hash::get($response, 'order.points.1.address'))) {
             $result['dostavista_courier']['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
@@ -127,13 +159,24 @@ class dostavistaShipping extends waShipping
             );
         }
 
-        $delivery_times = $this->getDeliveryTimes();
+        try {
+            $delivery_times = $this->getDeliveryTimes();
+        } catch (waException $e) {
+            $this->logProcess('exception', ['data' => ['exception' => $e], 'loglevel' => LogLevel::ERROR]);
+            $this->logProcess('flush', ['message' => 'Расчёт прерван']);
+            return 'Ошибка расчёта';
+        }
         $result['dostavista_courier']['est_delivery'] = $delivery_times['estimate'];
 
         $setting = $this->customer_interval;
         if (!empty($setting['intervals'])) {
             $intervals = [];
-            $date_format = waDateTime::getFormat('date');
+            try {
+                $date_format = waDateTime::getFormat('date');
+            } catch (waException $e) {
+                $this->logProcess('exception', ['data' => ['exception' => $e], 'loglevel' => LogLevel::ERROR]);
+                $date_format = 'd.m.Y';
+            }
             $offset = null;
 
             foreach ($setting['intervals'] as $interval) {
@@ -155,15 +198,22 @@ class dostavistaShipping extends waShipping
                 }
             }
 
+            try {
+                $placeholder = waDateTime::format($date_format, $delivery['delivery_date']);
+            } catch (waException $e) {
+                $this->logProcess('exception', ['data' => ['exception' => $e], 'loglevel' => LogLevel::ERROR]);
+                $placeholder = "";
+            }
             $custom_data = array(
                 'offset'      => $offset,
                 'intervals'   => $intervals,
-                'placeholder' => waDateTime::format($date_format, $delivery['delivery_date']),
+                'placeholder' => $placeholder,
                 'holidays'    => $this->holidays,
                 'workdays'    => $this->workdays,
             );
             $result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR] = (array)Hash::get($result, 'dostavista_courier.custom_data.' . waShipping::TYPE_TODOOR) + $custom_data;
         }
+        $this->logProcess('flush');
 
         return $result;
     }
@@ -210,6 +260,7 @@ class dostavistaShipping extends waShipping
         $city = (string)ifset($address, 'city', '');
         $region_code = (string)ifset($address, 'region', '');
 
+        $this->logProcess('banned_location_setting', ['data' => $this->getSettings('location_rule')]);
         $met_conditions = WaShippingUtils::isBannedLocation($city, $region_code, $this->getSettings('location_rule')['value']);
 
         return $this->getSettings('location_rule')['value'] === 'except' ? $met_conditions : !$met_conditions;
@@ -236,8 +287,9 @@ class dostavistaShipping extends waShipping
         require_once 'vendors/autoload.php';
         parent::init();
         waAutoload::getInstance()->add([
-            'Syrnik\\dostavistaShipping\\Address'   => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
-            'Syrnik\\dostavistaShipping\\Surcharge' => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php"
+            'Syrnik\\dostavistaShipping\\Address'               => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
+            'Syrnik\\dostavistaShipping\\Surcharge'             => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
+            'Syrnik\\dostavistaShipping\\LoggerActionFormatter' => "wa-plugins/shipping/dostavista/lib/classes/LoggerActionFormatter.class.php"
         ]);
     }
 
@@ -312,14 +364,26 @@ class dostavistaShipping extends waShipping
     {
         if (($address_validation = $address->validate()) !== true) {
             if (!is_array($address_validation)) {
-//                $this->logProcess('Проверка адреса вернула неожиданное значение: {data}', ['data' => var_export($address_validation, true)], 'flush');
+                $this->logProcess('flush', [
+                    'message'  => 'Проверка адреса вернула неожиданное значение: {data}',
+                    'data'     => ['data' => var_export($address_validation, true)],
+                    'loglevel' => LogLevel::ERROR
+                ]);
                 return false;
             }
             if ($address_validation['code'] === Address::ERR_VALIDATION_FATAL_RECOVERABLE) {
-//                $this->logProcess('Исправимая ошибка проверки адреса: {msg}', ['msg' => $address_validation['message']], 'flush');
+                $this->logProcess('flush', [
+                    'message'  => 'Исправимая ошибка проверки адреса: {msg}',
+                    'data'     => ['msg' => $address_validation['message']],
+                    'loglevel' => LogLevel::INFO
+                ]);
                 return [['rate' => null, 'comment' => $address_validation['message']]];
             }
-//            $this->logProcess('Проверка полей дреса не пройдена: {data}', ['data' => var_export($address_validation, true)], 'flush');
+            $this->logProcess('flush', [
+                'message'  => 'Проверка полей адреса не пройдена: {data}',
+                'data'     => ['data' => var_export($address_validation, true)],
+                'loglevel' => LogLevel::INFO
+            ]);
             throw new waException('Ошибка проверки полей адреса');
         }
 

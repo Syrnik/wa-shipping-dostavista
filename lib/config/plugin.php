@@ -1,6 +1,6 @@
 <?php
 return array(
-    'name'             => 'Dostavista',
+    'name'             => 'Расчёт доставки Dostavista',
     'description'      => 'Расчёт стоимости доставки службой Dostavista',
     'icon'             => 'img/dostavista.png',
     'version'          => '1.0.0',

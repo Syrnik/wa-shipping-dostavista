@@ -27,5 +27,6 @@ return array(
     'surcharge'           => ['value' => ''],
     'free_delivery'       => ['value' => null],
     'location_rule'       => ['value' => ['type' => 'except', 'value' => '']],
+    'sms_notify'          => ['value' => ['client' => false, 'receiver' => 'no']],
     'detailed_log'        => ['value' => false]
 );

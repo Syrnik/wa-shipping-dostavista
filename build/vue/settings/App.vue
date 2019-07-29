@@ -64,6 +64,7 @@
                             :name="addns('free_delivery', info.namespace)"><br><span
                             class="hint">Если сумма заказа больше либо равна указанной, то доставка в ПВЗ будет бесплатной. Оставьте поле пустым, если доставка всегда платная. Поставьте 0, если доставка всегда бесплатная.</span></div></wa-field>
                 <location-rule name="Ограничения по географии" field="location_rule" :ns="info.namespace" v-model="location_rule"></location-rule>
+                <sms-notifications :ns="addns('sms_notify', info.namespace)" v-model="sms_notify"></sms-notifications>
                 <wa-field name="Подробный лог">
                     <input type="hidden" :name="addns('detailed_log', info.namespace)" value="0">
                     <div class="value no-shift">
@@ -89,6 +90,7 @@
     import Insurance from '../components/insurance-setting.vue'
     import LocationRule from "../components/LocationRule.vue";
     import AboutPage from "../components/about/AboutPage.vue";
+    import SmsNotifications from "../components/sms-notifications.vue"
 
     export default {
         props: {
@@ -99,6 +101,6 @@
         data() {
             return this.settings
         },
-        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule, AboutPage}
+        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule, AboutPage, SmsNotifications}
     }
 </script>

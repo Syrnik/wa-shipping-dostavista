@@ -43,6 +43,7 @@ use Webit\Util\EvalMath\EvalMath;
  * @property-read array<string> $workdays
  * @property-read array{type:string, value:string} $location_rule
  * @property-read bool $detailed_log
+ * @property-read array{client:bool, receiver:string} $sms_notify
  */
 class dostavistaShipping extends waShipping
 {
@@ -62,7 +63,7 @@ class dostavistaShipping extends waShipping
      */
     protected function calculate()
     {
-        $this->startLogger(waSystemConfig::isDebug() ? ( $this->detailed_log ? LogLevel::DEBUG : LogLevel::INFO) : LogLevel::ALERT);
+        $this->startLogger(waSystemConfig::isDebug() ? ($this->detailed_log ? LogLevel::DEBUG : LogLevel::INFO) : LogLevel::ALERT);
         $this->logProcess('start');
 
         $address = new Address($this->getAddress());
@@ -648,6 +649,15 @@ class dostavistaShipping extends waShipping
                     break;
                 case 'surcharge':
                     $data = trim($data);
+                    break;
+                case 'sms_notify':
+                    $data = (array)$data;
+                    $client = (bool)ifset($data, 'client', false);
+                    $receiver = (string)ifset($data, 'receiver', 'no');
+                    if (!in_array($receiver, ['no', 'yes', 'ask_no', 'ask_yes'])) {
+                        $receiver = 'no';
+                    }
+                    $data = ['client' => $client, 'receiver' => $receiver];
                     break;
             }
             $settings[$key] = $data;

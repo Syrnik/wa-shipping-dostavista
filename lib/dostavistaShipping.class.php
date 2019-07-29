@@ -42,6 +42,7 @@ use Webit\Util\EvalMath\EvalMath;
  * @property-read array<string> $holidays
  * @property-read array<string> $workdays
  * @property-read array{type:string, value:string} $location_rule
+ * @property-read bool $detailed_log
  */
 class dostavistaShipping extends waShipping
 {
@@ -636,6 +637,7 @@ class dostavistaShipping extends waShipping
                     $data = (int)$data;
                     break;
                 case 'cash_on_delivery':
+                case 'detailed_log':
                     $data = (bool)$data;
                     break;
                 case 'free_delivery':

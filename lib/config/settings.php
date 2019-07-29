@@ -26,5 +26,6 @@ return array(
     'insurance'           => ['value' => ['type' => 'none', 'value' => '']],
     'surcharge'           => ['value' => ''],
     'free_delivery'       => ['value' => null],
-    'location_rule'       => ['value' => ['type' => 'except', 'value' => '']]
+    'location_rule'       => ['value' => ['type' => 'except', 'value' => '']],
+    'detailed_log'        => ['value' => false]
 );

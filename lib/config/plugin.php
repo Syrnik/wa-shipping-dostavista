@@ -1,8 +1,9 @@
 <?php
 return array(
-    'name'             => 'Расчёт доставки Dostavista',
-    'description'      => 'Расчёт стоимости доставки службой Dostavista',
-    'icon'             => 'img/dostavista.png',
+    'name'             => 'Dostavista',
+    'description'      => 'Расчёт стоимости доставки курьерской службой Dostavista',
+    'icon'             => 'img/icon16.png',
+    'logo'             => 'img/dostavista.png',
     'version'          => '1.0.0',
     'vendor'           => '670917',
     'external'         => true,

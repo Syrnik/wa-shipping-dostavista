@@ -14,6 +14,7 @@ use waUtils;
 /**
  * Class LoggerActionFormatter
  * @package Syrnik\neograstinShipping
+ * @deprecated
  */
 class LoggerActionFormatter
 {

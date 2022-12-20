@@ -59,27 +59,245 @@ class dostavistaShipping extends waShipping
     protected $_schedule;
 
     /**
-     * @return string|array|bool
+     * @return string
+     */
+    public function allowedCurrency(): string
+    {
+        return 'RUB';
+    }
+
+    /**
+     * @return string
+     */
+    public function allowedWeightUnit(): string
+    {
+        return 'kg';
+    }
+
+    /**
+     * @return array
+     */
+    public function allowedAddress(): array
+    {
+        return [['country' => 'rus', 'region' => ['77', '50']]];
+    }
+
+    /**
+     * @return array
+     */
+    public function requestedAddressFields(): array
+    {
+        return [
+            'country' => ['hidden' => true, 'value' => 'rus'],
+            'region'  => ['cost' => true, 'required' => true],
+            'city'    => ['cost' => true, 'required' => true],
+            'street'  => ['cost' => true, 'required' => true]
+        ];
+    }
+
+    /**
+     * @param array $params
+     * @return string
+     * @throws SmartyException
+     * @throws waException
+     */
+    public function getSettingsHTML($params = array()): string
+    {
+        $errors = [];
+        $settings = $this->getSettings();
+        $info = array(
+            'version'                 => $this->getProperties('version'),
+            'build'                   => $this->getProperties('build'),
+            'name'                    => $this->getProperties('name'),
+            'namespace'               => (string)Hash::get($params, 'namespace'),
+            'use_address_suggestions' => $this->isDadataAppReady(),
+            'url'                     => ['autocomplete' =>
+                                              wa()->getRouteUrl(
+                                                  sprintf("%s/frontend/shippingPlugin", $this->app_id),
+                                                  ['plugin_id' => $this->key, 'action_id' => 'dispatchAutocomplete'],
+                                                  true)],
+            'callback_support'        => $this->hasBackendSettingsSupport(),
+            'callback_url'            => $this->getBackendSettingsCallbackUrl()
+        );
+        /* // размеры плагин не использует
+                try {
+                    $info['dimensions'] = $this->getAppDimensionSupport();
+                } catch (waException $e) {
+                    $info['dimensions'] = 'not_supported';
+                    $errors[] = ['code' => $e->getCode(), 'message' => $e->getMessage()];
+                }
+        */
+        $view = $this->getView();
+        $view->assign(compact('settings', 'info', 'errors'));
+        $view->assign(['plugin_id' => $this->id, 'plugin_js_object' => 'ShippingDostavistaPluginSettings']);
+
+        return $view->fetch($this->path . '/templates/settings.html');
+    }
+
+    /**
+     * @return bool
+     */
+    private function isDadataAppReady(): bool
+    {
+        try {
+            wa('alldadata');
+        } catch (Exception $e) {
+            return false;
+        }
+
+        return (new alldadataApi)->tokenAvailable();
+    }
+
+    /**
+     * В плагине есть поддержка для колбэков из настроек
+     *
+     * @return bool
+     */
+    private function hasBackendSettingsSupport(): bool
+    {
+        return $this->app_id === 'shop';
+    }
+
+    /**
+     * @return string|null
+     */
+    private function getBackendSettingsCallbackUrl(): ?string
+    {
+        return $this->hasBackendSettingsSupport() ? "?module=settings&action=shippingSetup&plugin_id=$this->id" : null;
+    }
+
+    /**
+     * @param bool $clean
+     * @return waSmarty3View
+     * @throws SmartyException
+     * @throws waException
+     * @deprecated
+     */
+    private function getView(bool $clean = false): waSmarty3View
+    {
+
+        if ($clean || !$this->_view) {
+            $view = new waSmarty3View($this->getSystem());
+            if (!$clean) {
+                $this->_view = $view;
+            }
+
+            return $view;
+        }
+
+        return $this->_view;
+    }
+
+    /**
+     * @return waSystem
+     * @throws waException
+     * @deprecated
+     */
+    private function getSystem(): waSystem
+    {
+        if ($this->_system) {
+            return $this->_system;
+        }
+
+        $this->_system = wa();
+        return $this->_system;
+    }
+
+    /**
+     * @param array $settings
+     * @return array
+     * @throws waException
+     */
+    public function saveSettings($settings = array()): array
+    {
+        if (isset($settings['customer_interval'])) {
+            $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
+        }
+        $settings['cash_on_delivery'] = (bool)ifset($settings, 'cash_on_delivery', false);
+
+        $settings = $this->_typecastSettings($settings);
+
+        return parent::saveSettings($settings);
+    }
+
+    /**
+     * @param waOrder $order
+     * @return array
+     * @throws waException
+     * @noinspection DuplicatedCode
+     */
+    public function customFields(waOrder $order): array
+    {
+        $fields = parent::customFields($order);
+        $setting = $this->customer_interval;
+
+        if (!empty($this->customer_interval['interval']) || !empty($this->customer_interval['date'])) {
+            $from = (!strlen($this->delivery_time) || ($this->delivery_time === 'exact_delivery_time')) ? time() : strtotime(preg_replace('/,.+$/', '', $this->delivery_time));
+            $offset = max(0, round(($from - time()) / (24 * 3600)));
+            $shipping_params = $order->shipping_params;
+            $value = array();
+
+            if (!empty($shipping_params['desired_delivery.interval'])) {
+                $value['interval'] = $shipping_params['desired_delivery.interval'];
+            }
+            if (!empty($shipping_params['desired_delivery.date_str'])) {
+                $value['date_str'] = $shipping_params['desired_delivery.date_str'];
+            }
+            if (!empty($shipping_params['desired_delivery.date'])) {
+                $value['date'] = $shipping_params['desired_delivery.date'];
+            }
+
+            if (!empty($setting['intervals'])) {
+                $delivery_times = $this->getDeliveryTimes();
+                foreach ($setting['intervals'] as &$interval) {
+                    $interval = $this->getInterval($interval, $delivery_times['timestamp']);
+                }
+                unset($interval);
+            }
+
+            $params = [
+                'date'      => empty($this->customer_interval['date']) ? null : (int)$offset,
+                'interval'  => ifset($setting['interval']),
+                'intervals' => ifset($setting['intervals']),
+                'holidays'  => $this->holidays,
+                'workdays'  => $this->workdays
+            ];
+
+            $fields['desired_delivery'] = [
+                'value'        => $value,
+                'title'        => 'Желаемое время доставки',
+                'control_type' => waHtmlControl::DATETIME,
+                'params'       => $params
+            ];
+
+        }
+
+//        if (in_array($this->sms_notify['receiver'], ['ask_yes', 'ask_no'])) {
+//            $fields['sms_notification'] = [
+//                'title'        => 'SMS уведомление',
+//                'label'        => 'Отправить SMS с интервалом прибытия и телефоном курьера',
+//                'control_type' => waHtmlControl::CHECKBOX,
+//                'value'        => ifset($shipping_params, 'sms_notification', '0') ? '1' : '0',
+//                'data'         => ['affects-rate' => true]
+//            ];
+//        }
+
+        return $fields;
+    }
+
+    /**
+     * @return array|string
      */
     protected function calculate()
     {
         $this->startLogger(waSystemConfig::isDebug() ? ($this->detailed_log ? LogLevel::DEBUG : LogLevel::INFO) : LogLevel::ALERT);
         $this->logProcess('start');
 
+        $limits_checker = new dostavistaShippingLimitsChecker($this);
+        if(!$limits_checker->isAllowed()) return [['rate' => null, 'currency' => 'RUB', 'comment' => $limits_checker->getMessage()]];
+
         $address = new Address($this->getAddress());
         $this->logProcess('address', ['data' => ['address' => $address]]);
-
-        if (($address_errors = $this->addressValidationErrors($address)) !== true) {
-            return $address_errors;
-        }
-
-        if (!$this->isAllowedAddress(['country' => 'rus', 'city' => $address->getCity(), 'region' => $address->getRegionCode()])) {
-            $this->logProcess('flush', ['message' => 'Доставка в город запрещена правилом или регион не подошёл', 'loglevel' => LogLevel::INFO]);
-            return [
-                'rate'    => null,
-                'comment' => 'Доставка по указанному адресу невозможна'
-            ];
-        }
 
         $query = [
                 'matter'                                 => 'Shopping',
@@ -223,312 +441,6 @@ class dostavistaShipping extends waShipping
     }
 
     /**
-     * @return string
-     */
-    public function allowedCurrency()
-    {
-        return 'RUB';
-    }
-
-    /**
-     * @return string
-     */
-    public function allowedWeightUnit()
-    {
-        return 'kg';
-    }
-
-    /**
-     * @return array
-     */
-    public function allowedAddress()
-    {
-        return [['country' => 'rus', 'region' => ['77', '50']]];
-    }
-
-    /**
-     * @param array $address
-     * @return bool
-     */
-    public function isAllowedAddress($address = array())
-    {
-        $allowed = parent::isAllowedAddress($address);
-        if (!$allowed) {
-            return $allowed;
-        }
-
-        if (empty($address)) {
-            $address = $this->getAddress();
-        }
-
-        $city = (string)ifset($address, 'city', '');
-        $region_code = (string)ifset($address, 'region', '');
-
-        $this->logProcess('banned_location_setting', ['data' => $this->getSettings('location_rule')]);
-        $met_conditions = WaShippingUtils::isBannedLocation($city, $region_code, $this->getSettings('location_rule')['value']);
-
-        return $this->getSettings('location_rule')['value'] === 'except' ? $met_conditions : !$met_conditions;
-    }
-
-    /**
-     * @return array
-     */
-    public function requestedAddressFields()
-    {
-        return [
-            'country' => ['hidden' => true, 'value' => 'rus'],
-            'region'  => ['cost' => true, 'required' => true],
-            'city'    => ['cost' => true, 'required' => true],
-            'street'  => ['cost' => true, 'required' => true]
-        ];
-    }
-
-    /**
-     * @see waShipping::init()
-     */
-    protected function init()
-    {
-        require_once 'vendors/autoload.php';
-        parent::init();
-        waAutoload::getInstance()->add([
-            'Syrnik\\dostavistaShipping\\Address'               => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
-            'Syrnik\\dostavistaShipping\\Surcharge'             => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
-            'Syrnik\\dostavistaShipping\\LoggerActionFormatter' => "wa-plugins/shipping/dostavista/lib/classes/LoggerActionFormatter.class.php"
-        ]);
-    }
-
-    /**
-     * @param mixed $data
-     */
-    private function sendJsonData($data)
-    {
-        $response = array(
-            'status' => 'ok',
-            'data'   => $data,
-        );
-        $this->sendJsonResponse($response);
-    }
-
-    /**
-     * @param mixed $response
-     */
-    private function sendJsonResponse($response)
-    {
-        if (waRequest::isXMLHttpRequest()) {
-            wa()->getResponse()->addHeader('Content-Type', 'application/json')->sendHeaders();
-        }
-        echo waUtils::jsonEncode($response);
-        exit;
-    }
-
-    /**
-     * @param mixed $error
-     */
-    private function sendJsonError($error)
-    {
-        $response = array(
-            'status' => 'fail',
-            'errors' => array($error),
-        );
-        $this->sendJsonResponse($response);
-    }
-
-    /**
-     * @return string
-     */
-    protected function getDostavistaApiUrl()
-    {
-        return $this->api_server === 'production' ? 'https://robot.dostavista.ru/api/business/1.1' : 'https://robotapitest.dostavista.ru/api/business/1.1';
-    }
-
-    /**
-     * @param $method
-     * @param $http_method
-     * @param array $data
-     * @param array $options
-     * @return array
-     * @throws waException
-     */
-    public function queryDostavistaApi($method, $http_method, array $data = [], array $options = [])
-    {
-        $url = ifset($options, 'api_url', $this->getDostavistaApiUrl()) . "/$method";
-        $token = ifset($options, 'token', $this->token);
-
-        $headers = ['X-DV-Auth-Token' => $token] + (array)ifset($options, 'headers', []);
-
-        return (new waNet(['format' => waNet::FORMAT_JSON, 'expected_http_code' => '200,400'], $headers))->query($url, $data, $http_method);
-    }
-
-    /**
-     * @param Address $address
-     * @return array|bool
-     * @throws waException
-     */
-    protected function addressValidationErrors(Address $address)
-    {
-        if (($address_validation = $address->validate()) !== true) {
-            if (!is_array($address_validation)) {
-                $this->logProcess('flush', [
-                    'message'  => 'Проверка адреса вернула неожиданное значение: {data}',
-                    'data'     => ['data' => var_export($address_validation, true)],
-                    'loglevel' => LogLevel::ERROR
-                ]);
-                return false;
-            }
-            if ($address_validation['code'] === Address::ERR_VALIDATION_FATAL_RECOVERABLE) {
-                $this->logProcess('flush', [
-                    'message'  => 'Исправимая ошибка проверки адреса: {msg}',
-                    'data'     => ['msg' => $address_validation['message']],
-                    'loglevel' => LogLevel::INFO
-                ]);
-                return [['rate' => null, 'comment' => $address_validation['message']]];
-            }
-            $this->logProcess('flush', [
-                'message'  => 'Проверка полей адреса не пройдена: {data}',
-                'data'     => ['data' => var_export($address_validation, true)],
-                'loglevel' => LogLevel::INFO
-            ]);
-            throw new waException('Ошибка проверки полей адреса');
-        }
-
-        return true;
-    }
-
-    /**
-     * @return float
-     */
-    protected function getTotalWeight()
-    {
-        return max(1, ceil(parent::getTotalWeight()));
-    }
-
-    /**
-     * @param array $params
-     * @return string
-     */
-    public function getSettingsHTML($params = array())
-    {
-        $errors = [];
-        $settings = $this->getSettings();
-        $info = array(
-            'version'                 => $this->getProperties('version'),
-            'build'                   => $this->getProperties('build'),
-            'name'                    => $this->getProperties('name'),
-            'namespace'               => (string)Hash::get($params, 'namespace'),
-            'use_address_suggestions' => $this->isDadataAppReady(),
-            'url'                     => ['autocomplete' =>
-                                              wa()->getRouteUrl(
-                                                  sprintf("%s/frontend/shippingPlugin", $this->app_id),
-                                                  ['plugin_id' => $this->key, 'action_id' => 'dispatchAutocomplete'],
-                                                  true)],
-            'callback_support'        => $this->hasBackendSettingsSupport(),
-            'callback_url'            => $this->getBackendSettingsCallbackUrl()
-        );
-        /* // размеры плагин не использует
-                try {
-                    $info['dimensions'] = $this->getAppDimensionSupport();
-                } catch (waException $e) {
-                    $info['dimensions'] = 'not_supported';
-                    $errors[] = ['code' => $e->getCode(), 'message' => $e->getMessage()];
-                }
-        */
-        $view = $this->getView();
-        $view->assign(compact('settings', 'info', 'errors'));
-        $view->assign(['plugin_id' => $this->id, 'plugin_js_object' => 'ShippingDostavistaPluginSettings']);
-
-        return $view->fetch($this->path . '/templates/settings.html');
-    }
-
-    /**
-     * @param bool $clean
-     * @return waSmarty3View
-     */
-    private function getView($clean = false)
-    {
-
-        if ($clean || !$this->_view) {
-            $view = new waSmarty3View($this->getSystem());
-            if (!$clean) {
-                $this->_view = $view;
-            }
-
-            return $view;
-        }
-
-        return $this->_view;
-    }
-
-    /**
-     * @return waSystem
-     */
-    private function getSystem()
-    {
-        if ($this->_system) {
-            return $this->_system;
-        }
-
-        $this->_system = wa();
-        return $this->_system;
-    }
-
-    /**
-     * @return bool
-     */
-    private function isDadataAppReady()
-    {
-        try {
-            wa('alldadata');
-        } catch (Exception $e) {
-            return false;
-        }
-
-        return (new alldadataApi)->tokenAvailable();
-    }
-
-    /**
-     * В плагине есть поддержка для колбэков из настроек
-     *
-     * @return bool
-     */
-    private function hasBackendSettingsSupport()
-    {
-        return $this->app_id === 'shop';
-    }
-
-    /**
-     * @return string|null
-     */
-    private function getBackendSettingsCallbackUrl()
-    {
-        return $this->hasBackendSettingsSupport() ? "?module=settings&action=shippingSetup&plugin_id={$this->id}" : null;
-    }
-
-    /**
-     * Приводит содержимое настройки с интервалами к нужному типу
-     *
-     * @param array $data
-     * @return array
-     */
-    private function castCustomerInterval(array $data)
-    {
-        $data['date'] = (bool)Hash::get($data, 'date');
-        $data['interval'] = (bool)Hash::get($data, 'interval');
-        $_intervals = (array)Hash::get($data, 'intervals');
-        $data['intervals'] = array_map(function ($v) {
-            $v['from'] = sprintf('%02d', max(1, min(23, (int)Hash::get($v, 'from'))));
-            $v['to'] = sprintf('%02d', max(1, min(23, (int)Hash::get($v, 'to'))));
-            $v['from_m'] = sprintf('%02d', max(0, min(59, (int)Hash::get($v, 'from_m'))));
-            $v['to_m'] = sprintf('%02d', max(0, min(59, (int)Hash::get($v, 'to_m'))));
-            $v['workday'] = (bool)Hash::get($v, 'workday');
-            $v['holiday'] = (bool)Hash::get($v, 'holiday');
-            $v['day'] = array_map('intval', (array)Hash::get($v, 'day'));
-            return $v;
-        }, $_intervals);
-
-        return $data;
-    }
-
-    /**
      * @param null $name
      * @return array|string|void
      */
@@ -548,89 +460,8 @@ class dostavistaShipping extends waShipping
     /**
      * @param array $settings
      * @return array
-     * @throws waException
      */
-    public function saveSettings($settings = array())
-    {
-        if (isset($settings['customer_interval'])) {
-            $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
-        }
-        $settings['cash_on_delivery'] = (bool)ifset($settings, 'cash_on_delivery', false);
-
-        $settings = $this->_typecastSettings($settings);
-
-        return parent::saveSettings($settings);
-    }
-
-    /**
-     * @param waOrder $order
-     * @return array
-     * @throws waException
-     */
-    public function customFields(waOrder $order)
-    {
-        $fields = parent::customFields($order);
-        $setting = $this->customer_interval;
-
-        if (!empty($this->customer_interval['interval']) || !empty($this->customer_interval['date'])) {
-            $from = (!strlen($this->delivery_time) || ($this->delivery_time === 'exact_delivery_time')) ? time() : strtotime(preg_replace('/,.+$/', '', $this->delivery_time));
-            $offset = max(0, round(($from - time()) / (24 * 3600)));
-            $shipping_params = $order->shipping_params;
-            $value = array();
-
-            if (!empty($shipping_params['desired_delivery.interval'])) {
-                $value['interval'] = $shipping_params['desired_delivery.interval'];
-            }
-            if (!empty($shipping_params['desired_delivery.date_str'])) {
-                $value['date_str'] = $shipping_params['desired_delivery.date_str'];
-            }
-            if (!empty($shipping_params['desired_delivery.date'])) {
-                $value['date'] = $shipping_params['desired_delivery.date'];
-            }
-
-            if (!empty($setting['intervals'])) {
-                $delivery_times = $this->getDeliveryTimes();
-                foreach ($setting['intervals'] as &$interval) {
-                    $interval = $this->getInterval($interval, $delivery_times['timestamp']);
-                }
-                unset($interval);
-            }
-
-            $params = [
-                'date'      => empty($this->customer_interval['date']) ? null : (int)$offset,
-                'interval'  => ifset($setting['interval']),
-                'intervals' => ifset($setting['intervals']),
-                'holidays'  => $this->holidays,
-                'workdays'  => $this->workdays
-            ];
-
-            $fields['desired_delivery'] = [
-                'value'        => $value,
-                'title'        => 'Желаемое время доставки',
-                'control_type' => waHtmlControl::DATETIME,
-                'params'       => $params
-            ];
-
-        }
-
-//        if (in_array($this->sms_notify['receiver'], ['ask_yes', 'ask_no'])) {
-//            $fields['sms_notification'] = [
-//                'title'        => 'SMS уведомление',
-//                'label'        => 'Отправить SMS с интервалом прибытия и телефоном курьера',
-//                'control_type' => waHtmlControl::CHECKBOX,
-//                'value'        => ifset($shipping_params, 'sms_notification', '0') ? '1' : '0',
-//                'data'         => ['affects-rate' => true]
-//            ];
-//        }
-
-        return $fields;
-    }
-
-    /**
-     * @param array $settings
-     * @return array
-     */
-    protected function _typecastSettings(array $settings)
+    protected function _typecastSettings(array $settings): array
     {
         foreach ($settings as $key => $data) {
             switch ($key) {
@@ -679,10 +510,147 @@ class dostavistaShipping extends waShipping
     }
 
     /**
+     * Приводит содержимое настройки с интервалами к нужному типу
+     *
+     * @param array $data
+     * @return array
+     */
+    private function castCustomerInterval(array $data): array
+    {
+        $data['date'] = (bool)Hash::get($data, 'date');
+        $data['interval'] = (bool)Hash::get($data, 'interval');
+        $_intervals = (array)Hash::get($data, 'intervals');
+        $data['intervals'] = array_map(function ($v) {
+            $v['from'] = sprintf('%02d', max(1, min(23, (int)Hash::get($v, 'from'))));
+            $v['to'] = sprintf('%02d', max(1, min(23, (int)Hash::get($v, 'to'))));
+            $v['from_m'] = sprintf('%02d', max(0, min(59, (int)Hash::get($v, 'from_m'))));
+            $v['to_m'] = sprintf('%02d', max(0, min(59, (int)Hash::get($v, 'to_m'))));
+            $v['workday'] = (bool)Hash::get($v, 'workday');
+            $v['holiday'] = (bool)Hash::get($v, 'holiday');
+            $v['day'] = array_map('intval', (array)Hash::get($v, 'day'));
+            return $v;
+        }, $_intervals);
+
+        return $data;
+    }
+
+    /**
+     * @return float
+     */
+    protected function getTotalWeight(): float
+    {
+        return max(1, ceil(parent::getTotalWeight()));
+    }
+
+    /**
+     * Потом сделаем возможность выбора покупателем
+     *
+     * @return bool
+     */
+    private function getContactPersonNotificationOption(): bool
+    {
+        if ($this->sms_notify['receiver'] == 'yes') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Возвращает сумму наложки для получения с клиента в виде массива для добавления к point
+     * при расчёте
+     *
+     * @return array
+     */
+    protected function getCashOnDeliveryQueryField(): array
+    {
+        return $this->cash_on_delivery ? ['taking_amount' => number_format($this->getTotalPrice(), 2, '.', '')] : [];
+    }
+
+    /**
+     * Настройка с оценочной стоимостью (стоимостью страховки)
+     * Выдаёт массив со значением для добавления к запросу
+     *
+     * @return array
+     */
+    protected function getInsuranceQueryField(): array
+    {
+        switch ($this->insurance['type']) {
+            case 'raw':
+                return ['insurance_amount' => number_format($this->getTotalRawPrice(), 2, '.', '')];
+            case 'total':
+                return ['insurance_amount' => number_format($this->getTotalPrice(), 2, '.', '')];
+            case 'custom':
+                $formula = trim($this->insurance['value']);
+                if (!strlen($formula)) {
+                    break;
+                }
+                $formula = strtolower($formula);
+                $formula = str_replace(',', '.', $formula);
+                if ((strpos($formula, 'w') === false) && (strpos($formula, 't') === false)) {
+                    return ['insurance_amount' => number_format((float)$formula, 2, '.', '')];
+                }
+                $math = new EvalMath();
+                $math->suppress_errors = true;
+                $math->evaluate('w=' . str_replace(',', '.', $this->getTotalRawPrice()));
+                $math->evaluate('t=' . str_replace(',', '.', $this->getTotalPrice()));
+                $value = $math->evaluate($formula);
+                if ($value === false) {
+                    //todo log
+                }
+                return ['insurance_amount' => number_format((float)$value, 2, '.', '')];
+        }
+
+        return [];
+    }
+
+    /**
+     * Изготавливает ключ для кэширования результата запроса на расчёт
+     *
+     * @param $query
+     * @return string
+     */
+    private function getInstanceCacheKeyForCalc($query): string
+    {
+        $query['points'] = array_map(function ($v) {
+            $v['address'] = WaShippingUtils::mb_trim(mb_strtolower($v['address'], 'UTF-8'));
+            return $v;
+        }, $query['points']);
+
+        return md5(waUtils::jsonEncode($query));
+    }
+
+    /**
+     * @param $method
+     * @param $http_method
+     * @param array $data
+     * @param array $options
+     * @return array
+     * @throws waException
+     */
+    public function queryDostavistaApi($method, $http_method, array $data = [], array $options = []): array
+    {
+        $url = ifset($options, 'api_url', $this->getDostavistaApiUrl()) . "/$method";
+        $token = ifset($options, 'token', $this->token);
+
+        $headers = ['X-DV-Auth-Token' => $token] + (array)ifset($options, 'headers', []);
+
+        return (new waNet(['format' => waNet::FORMAT_JSON, 'expected_http_code' => '200,400'], $headers))->query($url, $data, $http_method);
+    }
+
+    /**
+     * @return string
+     */
+    protected function getDostavistaApiUrl(): string
+    {
+        return $this->api_server === 'production' ? 'https://robot.dostavista.ru/api/business/1.1' : 'https://robotapitest.dostavista.ru/api/business/1.1';
+    }
+
+    /**
      * @return array{timestamp:int|array<int>, estimate:string}
      * @throws waException
      */
-    protected function getDeliveryTimes()
+    protected function getDeliveryTimes(): array
     {
         if (!$this->delivery_time) {
             return ['timestamp' => null, 'estimate' => null];
@@ -725,7 +693,7 @@ class dostavistaShipping extends waShipping
     /**
      * @return array{time:int, holidays:array<string>, workdays:array<string>}
      */
-    protected function getSchedule()
+    protected function getSchedule(): array
     {
         if ($this->_schedule === null) {
             $this->_schedule['holidays'] = $this->holidays;
@@ -746,7 +714,7 @@ class dostavistaShipping extends waShipping
      *          workday: bool,
      *          holiday: bool
      *      } $interval
-     * @param int $timestamp
+     * @param int|array $timestamp
      * @return array{
      *     offset: int,
      *     from: string,
@@ -755,8 +723,9 @@ class dostavistaShipping extends waShipping
      *     days: array,
      *     start_date: string
      * }
+     * @noinspection DuplicatedCode
      */
-    protected function getInterval($interval, $timestamp)
+    protected function getInterval(array $interval, $timestamp): array
     {
         $result = [
             'offset' => 0,
@@ -796,7 +765,7 @@ class dostavistaShipping extends waShipping
         } while (empty($service_delivery_date));
 
         $_days = [];
-        foreach ($interval['day'] as $key => $value) {
+        foreach ($interval['day'] as $value) {
             $_days[$value - 1] = 1;
         }
 
@@ -815,86 +784,26 @@ class dostavistaShipping extends waShipping
     }
 
     /**
-     * Настройка с оценочной стоимостию (стоимостью страховки)
-     * Выдаёт массив со значением для добавления к запросу
-     *
-     * @return array
+     * @see waShipping::init()
+     * @todo Убрать это. Refactor!
      */
-    protected function getInsuranceQueryField()
+    protected function init()
     {
-        switch ($this->insurance['type']) {
-            case 'raw':
-                return ['insurance_amount' => number_format($this->getTotalRawPrice(), 2, '.', '')];
-                break;
-            case 'total':
-                return ['insurance_amount' => number_format($this->getTotalPrice(), 2, '.', '')];
-                break;
-            case 'custom':
-                $formula = trim($this->insurance['value']);
-                if (!strlen($formula)) {
-                    break;
-                }
-                $formula = strtolower($formula);
-                $formula = str_replace(',', '.', $formula);
-                if ((strpos($formula, 'w') === false) && (strpos($formula, 't') === false)) {
-                    return ['insurance_amount' => number_format((float)$formula, 2, '.', '')];
-                    break;
-                }
-                $math = new EvalMath();
-                $math->suppress_errors = true;
-                $math->evaluate('w=' . str_replace(',', '.', $this->getTotalRawPrice()));
-                $math->evaluate('t=' . str_replace(',', '.', $this->getTotalPrice()));
-                $value = $math->evaluate($formula);
-                if ($value === false) {
-                    //todo log
-                }
-                return ['insurance_amount' => number_format((float)$value, 2, '.', '')];
-                break;
-        }
-
-        return [];
+        require_once 'vendors/autoload.php';
+        parent::init();
+        waAutoload::getInstance()->add([
+            'Syrnik\\dostavistaShipping\\Address'               => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
+            'Syrnik\\dostavistaShipping\\Surcharge'             => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
+            'Syrnik\\dostavistaShipping\\LoggerActionFormatter' => "wa-plugins/shipping/dostavista/lib/classes/LoggerActionFormatter.class.php"
+        ]);
     }
 
     /**
-     * Возвращает сумму наложки для получения с клиента в виде массива для добавления к point
-     * при расчёте
-     *
-     * @return array
+     * @param $field
+     * @return array|mixed|null
      */
-    protected function getCashOnDeliveryQueryField()
+    public function getAddress($field = null)
     {
-        return $this->cash_on_delivery ? ['taking_amount' => number_format($this->getTotalPrice(), 2, '.', '')] : [];
-    }
-
-    /**
-     * Изготавливает ключ для кэширования результата запроса на расчёт
-     *
-     * @param $query
-     * @return string
-     */
-    private function getInstanceCacheKeyForCalc($query)
-    {
-        $query['points'] = array_map(function ($v) {
-            $v['address'] = WaShippingUtils::mb_trim(mb_strtolower($v['address'], 'UTF-8'));
-            return $v;
-        }, $query['points']);
-
-        return md5(waUtils::jsonEncode($query));
-    }
-
-    /**
-     * Потом сделаем возможность выбора покупателем
-     *
-     * @return bool
-     */
-    private function getContactPersonNotificationOption()
-    {
-        switch ($this->sms_notify['receiver']) {
-            case 'yes':
-                return true;
-                break;
-        }
-
-        return false;
+        return parent::getAddress($field);
     }
 }

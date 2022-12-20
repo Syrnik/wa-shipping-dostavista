@@ -15,6 +15,7 @@ use waFileCacheAdapter;
  * @package Syrnik\dostavistaShipping
  * @property string $app_id
  * @property string $key
+ * @deprecated
  */
 trait InstanceCache
 {

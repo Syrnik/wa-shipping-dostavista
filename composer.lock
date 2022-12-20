@@ -51,6 +51,9 @@
                 "psr",
                 "psr-3"
             ],
+            "support": {
+                "source": "https://github.com/php-fig/log/tree/master"
+            },
             "time": "2016-10-10T12:19:37+00:00"
         },
         {
@@ -96,20 +99,69 @@
                 "inflector",
                 "string"
             ],
+            "support": {
+                "issues": "https://github.com/SergeR/cake-utils/issues",
+                "source": "https://github.com/SergeR/cake-utils/tree/v1.0.0"
+            },
             "time": "2019-04-04T22:17:46+00:00"
         },
         {
-            "name": "serger/process-logger",
-            "version": "1.0.0",
+            "name": "serger/eval-math",
+            "version": "v2.0.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/SergeR/process-logger.git",
-                "reference": "9b8298f715d48061df7a2efd42b515d7c91e385f"
+                "url": "https://github.com/SergeR/eval-math.git",
+                "reference": "de67b2209615bab91590aac1f462f0095af9c4aa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SergeR/process-logger/zipball/9b8298f715d48061df7a2efd42b515d7c91e385f",
-                "reference": "9b8298f715d48061df7a2efd42b515d7c91e385f",
+                "url": "https://api.github.com/repos/SergeR/eval-math/zipball/de67b2209615bab91590aac1f462f0095af9c4aa",
+                "reference": "de67b2209615bab91590aac1f462f0095af9c4aa",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^5.6 || ^7"
+            },
+            "require-dev": {
+                "php-coveralls/php-coveralls": "^2",
+                "phpunit/phpunit": "^5"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "SergeR\\Util\\EvalMath\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD"
+            ],
+            "description": "EvalMath",
+            "keywords": [
+                "EvalMath"
+            ],
+            "support": {
+                "source": "https://github.com/SergeR/eval-math/tree/v2.0.0"
+            },
+            "time": "2019-09-23T14:18:21+00:00"
+        },
+        {
+            "name": "serger/process-logger",
+            "version": "v1.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SergeR/process-logger.git",
+                "reference": "eb1b94b23d182d375e53261eb88b9bc039f56c5d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SergeR/process-logger/zipball/eb1b94b23d182d375e53261eb88b9bc039f56c5d",
+                "reference": "eb1b94b23d182d375e53261eb88b9bc039f56c5d",
                 "shasum": ""
             },
             "require": {
@@ -137,29 +189,32 @@
                 "logger"
             ],
             "support": {
-                "source": "https://github.com/SergeR/process-logger/tree/v1.0.0",
+                "source": "https://github.com/SergeR/process-logger/tree/v1.1.3",
                 "issues": "https://github.com/SergeR/process-logger/issues"
             },
-            "time": "2018-09-10T13:48:33+00:00"
+            "time": "2020-02-14T17:27:12+00:00"
         },
         {
             "name": "syrnik/wa-shipping-utils",
-            "version": "v1.6.1",
+            "version": "v1.9.3",
             "source": {
                 "type": "git",
                 "url": "https://gitlab.com/sergerod/wa-shipping-utils.git",
-                "reference": "a0851a990693d9fd5b36617c93c6b5eb07af930e"
+                "reference": "a3888306085ea035289038914ce32a14aa992ef0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://gitlab.com/api/v4/projects/sergerod%2Fwa-shipping-utils/repository/archive.zip?sha=a0851a990693d9fd5b36617c93c6b5eb07af930e",
-                "reference": "a0851a990693d9fd5b36617c93c6b5eb07af930e",
+                "url": "https://gitlab.com/api/v4/projects/sergerod%2Fwa-shipping-utils/repository/archive.zip?sha=a3888306085ea035289038914ce32a14aa992ef0",
+                "reference": "a3888306085ea035289038914ce32a14aa992ef0",
                 "shasum": ""
             },
             "require": {
                 "ext-mbstring": "*",
-                "php": "^5.6",
-                "webit/eval-math": "1.*"
+                "php": "^5.6 || ^7",
+                "serger/eval-math": "^2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5"
             },
             "type": "library",
             "autoload": {
@@ -187,7 +242,7 @@
                 "source": "https://gitlab.com/sergerod/wa-shipping-utils",
                 "issues": "https://gitlab.com/sergerod/wa-shipping-utils/issues"
             },
-            "time": "2019-07-25T10:21:06+00:00"
+            "time": "2020-02-14T17:16:54+03:00"
         },
         {
             "name": "webit/eval-math",
@@ -225,6 +280,10 @@
             "keywords": [
                 "EvalMath"
             ],
+            "support": {
+                "issues": "https://github.com/dbojdo/eval-math/issues",
+                "source": "https://github.com/dbojdo/eval-math/tree/master"
+            },
             "time": "2016-02-15T09:34:24+00:00"
         }
     ],
@@ -238,5 +297,6 @@
     "platform-dev": [],
     "platform-overrides": {
         "php": "5.6.0"
-    }
+    },
+    "plugin-api-version": "2.3.0"
 }

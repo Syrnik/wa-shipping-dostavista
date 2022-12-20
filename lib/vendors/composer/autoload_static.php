@@ -14,6 +14,7 @@ class ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c
         'S' => 
         array (
             'Syrnik\\' => 7,
+            'SergeR\\Util\\EvalMath\\' => 21,
             'SergeR\\CakeUtility\\' => 19,
             'SergeR\\' => 7,
         ),
@@ -32,6 +33,10 @@ class ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c
         array (
             0 => __DIR__ . '/..' . '/syrnik/wa-shipping-utils/src',
         ),
+        'SergeR\\Util\\EvalMath\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/serger/eval-math/src',
+        ),
         'SergeR\\CakeUtility\\' => 
         array (
             0 => __DIR__ . '/..' . '/serger/cake-utility/src',
@@ -46,11 +51,16 @@ class ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c
         ),
     );
 
+    public static $classMap = array (
+        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+    );
+
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c::$classMap;
 
         }, null, ClassLoader::class);
     }

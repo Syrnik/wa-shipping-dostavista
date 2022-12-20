@@ -20,6 +20,7 @@ class ProcessLogger extends AbstractLogger
 
     protected $messages;
     protected $start;
+    protected $mem;
     protected $timers = [];
 
     public function __construct($log_level = null)
@@ -84,6 +85,7 @@ class ProcessLogger extends AbstractLogger
 
         if (!$this->start) {
             $this->start = microtime(true);
+            $this->mem = memory_get_peak_usage();
         }
 
         if (!$this->messages) {
@@ -103,7 +105,14 @@ class ProcessLogger extends AbstractLogger
             return '';
         }
 
-        $this->messages[] = sprintf('* = Total execution time %0.2F seconds', microtime(true) - $this->start);
+        $bytes_used = memory_get_peak_usage() - $this->mem;
+
+
+        $this->messages[] = sprintf(
+            '* = Total execution time %0.2F seconds, total used memory: %s',
+            microtime(true) - $this->start,
+            $this->formatBytes($bytes_used)
+        );
         $this->messages[] = '*********************************************';
         $result = implode("\n", $this->messages);
         $this->messages = $this->start = null;
@@ -133,5 +142,23 @@ class ProcessLogger extends AbstractLogger
 
         // interpolate replacement values into the message and return
         return strtr($message, $replace);
+    }
+
+    /**
+     * @param $bytes
+     * @param int $precision
+     * @return string
+     */
+    protected function formatBytes($bytes, $precision = 3)
+    {
+        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+
+        $bytes /= pow(1024, $pow);
+
+        return rtrim(rtrim(number_format(round($bytes, $precision), 2, '.', ''), '0'), '.') . ' ' . $units[$pow];
     }
 }

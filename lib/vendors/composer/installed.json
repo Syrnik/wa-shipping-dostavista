@@ -1,233 +1,293 @@
-[
-    {
-        "name": "psr/log",
-        "version": "1.0.2",
-        "version_normalized": "1.0.2.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/php-fig/log.git",
-            "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d"
+{
+    "packages": [
+        {
+            "name": "psr/log",
+            "version": "1.0.2",
+            "version_normalized": "1.0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/log.git",
+                "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
+                "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "time": "2016-10-10T12:19:37+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Log\\": "Psr/Log/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "http://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for logging libraries",
+            "homepage": "https://github.com/php-fig/log",
+            "keywords": [
+                "log",
+                "psr",
+                "psr-3"
+            ],
+            "install-path": "../psr/log"
         },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/php-fig/log/zipball/4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
-            "reference": "4ebe3a8bf773a19edfe0a84b6585ba3d401b724d",
-            "shasum": ""
+        {
+            "name": "serger/cake-utility",
+            "version": "v1.0.0",
+            "version_normalized": "1.0.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SergeR/cake-utils.git",
+                "reference": "c7d6554c08f1d93be9f3f4b1c5cae10733558d42"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SergeR/cake-utils/zipball/c7d6554c08f1d93be9f3f4b1c5cae10733558d42",
+                "reference": "c7d6554c08f1d93be9f3f4b1c5cae10733558d42",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6.0"
+            },
+            "suggest": {
+                "ext-intl": "To use Text::transliterate() or Text::slug()",
+                "lib-ICU": "To use Text::transliterate() or Text::slug()"
+            },
+            "time": "2019-04-04T22:17:46+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "SergeR\\CakeUtility\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "CakePHP Community",
+                    "homepage": "https://github.com/cakephp/utility/graphs/contributors"
+                }
+            ],
+            "description": "CakePHP 3.x Utility classes such as Inflector, String, and Hash without Cake/Core dependency",
+            "keywords": [
+                "hash",
+                "inflector",
+                "string"
+            ],
+            "install-path": "../serger/cake-utility"
         },
-        "require": {
-            "php": ">=5.3.0"
+        {
+            "name": "serger/eval-math",
+            "version": "v2.0.0",
+            "version_normalized": "2.0.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SergeR/eval-math.git",
+                "reference": "de67b2209615bab91590aac1f462f0095af9c4aa"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SergeR/eval-math/zipball/de67b2209615bab91590aac1f462f0095af9c4aa",
+                "reference": "de67b2209615bab91590aac1f462f0095af9c4aa",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^5.6 || ^7"
+            },
+            "require-dev": {
+                "php-coveralls/php-coveralls": "^2",
+                "phpunit/phpunit": "^5"
+            },
+            "time": "2019-09-23T14:18:21+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "SergeR\\Util\\EvalMath\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD"
+            ],
+            "description": "EvalMath",
+            "keywords": [
+                "EvalMath"
+            ],
+            "support": {
+                "source": "https://github.com/SergeR/eval-math/tree/v2.0.0"
+            },
+            "install-path": "../serger/eval-math"
         },
-        "time": "2016-10-10T12:19:37+00:00",
-        "type": "library",
-        "extra": {
-            "branch-alias": {
-                "dev-master": "1.0.x-dev"
-            }
+        {
+            "name": "serger/process-logger",
+            "version": "v1.1.3",
+            "version_normalized": "1.1.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SergeR/process-logger.git",
+                "reference": "eb1b94b23d182d375e53261eb88b9bc039f56c5d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SergeR/process-logger/zipball/eb1b94b23d182d375e53261eb88b9bc039f56c5d",
+                "reference": "eb1b94b23d182d375e53261eb88b9bc039f56c5d",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6.0",
+                "psr/log": "~1.0.0"
+            },
+            "time": "2020-02-14T17:27:12+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "SergeR\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Serge Rodovnichenko",
+                    "email": "sergerod@gmail.com"
+                }
+            ],
+            "description": "Log all records in internal array",
+            "keywords": [
+                "log",
+                "logger"
+            ],
+            "support": {
+                "source": "https://github.com/SergeR/process-logger/tree/v1.1.3",
+                "issues": "https://github.com/SergeR/process-logger/issues"
+            },
+            "install-path": "../serger/process-logger"
         },
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Psr\\Log\\": "Psr/Log/"
-            }
+        {
+            "name": "syrnik/wa-shipping-utils",
+            "version": "v1.9.3",
+            "version_normalized": "1.9.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://gitlab.com/sergerod/wa-shipping-utils.git",
+                "reference": "a3888306085ea035289038914ce32a14aa992ef0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://gitlab.com/api/v4/projects/sergerod%2Fwa-shipping-utils/repository/archive.zip?sha=a3888306085ea035289038914ce32a14aa992ef0",
+                "reference": "a3888306085ea035289038914ce32a14aa992ef0",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": "^5.6 || ^7",
+                "serger/eval-math": "^2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5"
+            },
+            "time": "2020-02-14T17:16:54+03:00",
+            "type": "library",
+            "installation-source": "source",
+            "autoload": {
+                "psr-4": {
+                    "Syrnik\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Serge Rodovnichenko",
+                    "email": "serge@syrnik.com",
+                    "role": "developer"
+                }
+            ],
+            "description": "Набор статических методов для использования в плагинах расчёта стоимости доставки для Webasyst Framework",
+            "keywords": [
+                "shipping",
+                "webasyst"
+            ],
+            "support": {
+                "email": "support@syrnik.com",
+                "source": "https://gitlab.com/sergerod/wa-shipping-utils",
+                "issues": "https://gitlab.com/sergerod/wa-shipping-utils/issues"
+            },
+            "install-path": "../syrnik/wa-shipping-utils"
         },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "PHP-FIG",
-                "homepage": "http://www.php-fig.org/"
-            }
-        ],
-        "description": "Common interface for logging libraries",
-        "homepage": "https://github.com/php-fig/log",
-        "keywords": [
-            "log",
-            "psr",
-            "psr-3"
-        ]
-    },
-    {
-        "name": "serger/cake-utility",
-        "version": "v1.0.0",
-        "version_normalized": "1.0.0.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/SergeR/cake-utils.git",
-            "reference": "c7d6554c08f1d93be9f3f4b1c5cae10733558d42"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/SergeR/cake-utils/zipball/c7d6554c08f1d93be9f3f4b1c5cae10733558d42",
-            "reference": "c7d6554c08f1d93be9f3f4b1c5cae10733558d42",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.6.0"
-        },
-        "suggest": {
-            "ext-intl": "To use Text::transliterate() or Text::slug()",
-            "lib-ICU": "To use Text::transliterate() or Text::slug()"
-        },
-        "time": "2019-04-04T22:17:46+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "SergeR\\CakeUtility\\": "src"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "CakePHP Community",
-                "homepage": "https://github.com/cakephp/utility/graphs/contributors"
-            }
-        ],
-        "description": "CakePHP 3.x Utility classes such as Inflector, String, and Hash without Cake/Core dependency",
-        "keywords": [
-            "hash",
-            "inflector",
-            "string"
-        ]
-    },
-    {
-        "name": "serger/process-logger",
-        "version": "1.0.0",
-        "version_normalized": "1.0.0.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/SergeR/process-logger.git",
-            "reference": "9b8298f715d48061df7a2efd42b515d7c91e385f"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/SergeR/process-logger/zipball/9b8298f715d48061df7a2efd42b515d7c91e385f",
-            "reference": "9b8298f715d48061df7a2efd42b515d7c91e385f",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.6.0",
-            "psr/log": "~1.0.0"
-        },
-        "time": "2018-09-10T13:48:33+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "SergeR\\": "src/"
-            }
-        },
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Serge Rodovnichenko",
-                "email": "sergerod@gmail.com"
-            }
-        ],
-        "description": "Log all records in internal array",
-        "keywords": [
-            "log",
-            "logger"
-        ],
-        "support": {
-            "source": "https://github.com/SergeR/process-logger/tree/v1.0.0",
-            "issues": "https://github.com/SergeR/process-logger/issues"
+        {
+            "name": "webit/eval-math",
+            "version": "1.0.1",
+            "version_normalized": "1.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dbojdo/eval-math.git",
+                "reference": "0e7c3a1e0f536b826f04553726c112996b52ded6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dbojdo/eval-math/zipball/0e7c3a1e0f536b826f04553726c112996b52ded6",
+                "reference": "0e7c3a1e0f536b826f04553726c112996b52ded6",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.2"
+            },
+            "time": "2016-02-15T09:34:24+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Webit\\Util\\EvalMath\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "description": "EvalMath",
+            "keywords": [
+                "EvalMath"
+            ],
+            "install-path": "../webit/eval-math"
         }
-    },
-    {
-        "name": "syrnik/wa-shipping-utils",
-        "version": "v1.6.1",
-        "version_normalized": "1.6.1.0",
-        "source": {
-            "type": "git",
-            "url": "https://gitlab.com/sergerod/wa-shipping-utils.git",
-            "reference": "a0851a990693d9fd5b36617c93c6b5eb07af930e"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://gitlab.com/api/v4/projects/sergerod%2Fwa-shipping-utils/repository/archive.zip?sha=a0851a990693d9fd5b36617c93c6b5eb07af930e",
-            "reference": "a0851a990693d9fd5b36617c93c6b5eb07af930e",
-            "shasum": ""
-        },
-        "require": {
-            "ext-mbstring": "*",
-            "php": "^5.6",
-            "webit/eval-math": "1.*"
-        },
-        "time": "2019-07-25T10:21:06+00:00",
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Syrnik\\": "src/"
-            }
-        },
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Serge Rodovnichenko",
-                "email": "serge@syrnik.com",
-                "role": "developer"
-            }
-        ],
-        "description": "Набор статических методов для использования в плагинах расчёта стоимости доставки для Webasyst Framework",
-        "keywords": [
-            "shipping",
-            "webasyst"
-        ],
-        "support": {
-            "email": "support@syrnik.com",
-            "source": "https://gitlab.com/sergerod/wa-shipping-utils",
-            "issues": "https://gitlab.com/sergerod/wa-shipping-utils/issues"
-        }
-    },
-    {
-        "name": "webit/eval-math",
-        "version": "1.0.1",
-        "version_normalized": "1.0.1.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/dbojdo/eval-math.git",
-            "reference": "0e7c3a1e0f536b826f04553726c112996b52ded6"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/dbojdo/eval-math/zipball/0e7c3a1e0f536b826f04553726c112996b52ded6",
-            "reference": "0e7c3a1e0f536b826f04553726c112996b52ded6",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.3"
-        },
-        "require-dev": {
-            "phpunit/phpunit": "~4.2"
-        },
-        "time": "2016-02-15T09:34:24+00:00",
-        "type": "library",
-        "extra": {
-            "branch-alias": {
-                "dev-master": "1.x-dev"
-            }
-        },
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "Webit\\Util\\EvalMath\\": "src/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "description": "EvalMath",
-        "keywords": [
-            "EvalMath"
-        ]
-    }
-]
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

@@ -36,7 +36,7 @@ class dostavistaShippingLimitsChecker
      */
     public function isAllowed(?array $address = null): bool
     {
-        if (null === $address) $this->plugin->getAddress();
+        if (null === $address) $address = $this->plugin->getAddress();
         if (!$this->isAddressComplete($address)) return false;
 
         $logger = $this->plugin->getLogger();
@@ -44,6 +44,7 @@ class dostavistaShippingLimitsChecker
         if (!$this->isLocationAllowed()) {
             if ($logger) $logger->info("Доставка по выбранному адресу запрещена настройкой ограничения географии");
             $this->message = "Нет подходящих вариантов доставки для указанного города";
+            return false;
         }
         return true;
     }
@@ -89,11 +90,11 @@ class dostavistaShippingLimitsChecker
     public function isLocationAllowed(): bool
     {
         /** @var array{type:string, locations:string} $setting */
-        $setting = $this->plugin->getSettings('location_limits');
+        $setting = $this->plugin->getSettings('location_rule');
 
-        if (!$setting['locations']) return true;
+        if (!$setting['value']) return true;
 
-        $matched = WaShippingUtils::isBannedLocation($this->plugin->getAddress('city'), $this->plugin->getAddress('region'), $setting['location_rule']);
+        $matched = WaShippingUtils::isBannedLocation($this->plugin->getAddress('city'), $this->plugin->getAddress('region'), $setting['value']);
 
         return $setting['type'] === 'only' ? $matched : !$matched;
     }

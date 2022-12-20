@@ -14,6 +14,9 @@ use SergeR\ProcessLogger;
 use waLog;
 use waSystemConfig;
 
+/**
+ * @deprecated
+ */
 trait LoggerForShippingPlugins
 {
     /** @var ProcessLogger|LoggerInterface|null */

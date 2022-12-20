@@ -13,6 +13,7 @@ use Webit\Util\EvalMath\EvalMath;
 /**
  * Class Surcharge
  * @package Syrnik\vozovozShipping
+ * @deprecated
  */
 class Surcharge
 {

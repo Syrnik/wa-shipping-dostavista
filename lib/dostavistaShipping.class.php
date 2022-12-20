@@ -286,28 +286,18 @@ class dostavistaShipping extends waShipping
     }
 
     /**
-     * @return string|array|bool
-     * @throws waException
+     * @return array|string
      */
     protected function calculate()
     {
         $this->startLogger(waSystemConfig::isDebug() ? ($this->detailed_log ? LogLevel::DEBUG : LogLevel::INFO) : LogLevel::ALERT);
         $this->logProcess('start');
 
+        $limits_checker = new dostavistaShippingLimitsChecker($this);
+        if(!$limits_checker->isAllowed()) return [['rate' => null, 'currency' => 'RUB', 'comment' => $limits_checker->getMessage()]];
+
         $address = new Address($this->getAddress());
         $this->logProcess('address', ['data' => ['address' => $address]]);
-
-        if (($address_errors = $this->addressValidationErrors($address)) !== true) {
-            return $address_errors;
-        }
-
-        if (!$this->isAllowedAddress(['country' => 'rus', 'city' => $address->getCity(), 'region' => $address->getRegionCode()])) {
-            $this->logProcess('flush', ['message' => 'Доставка в город запрещена правилом или регион не подошёл', 'loglevel' => LogLevel::INFO]);
-            return [
-                'rate'    => null,
-                'comment' => 'Доставка по указанному адресу невозможна'
-            ];
-        }
 
         $query = [
                 'matter'                                 => 'Shopping',
@@ -448,65 +438,6 @@ class dostavistaShipping extends waShipping
         $this->logProcess('flush');
 
         return $result;
-    }
-
-    /**
-     * @param Address $address
-     * @return array|bool
-     * @throws waException
-     */
-    protected function addressValidationErrors(Address $address)
-    {
-        if (($address_validation = $address->validate()) !== true) {
-            if (!is_array($address_validation)) {
-                $this->logProcess('flush', [
-                    'message'  => 'Проверка адреса вернула неожиданное значение: {data}',
-                    'data'     => ['data' => var_export($address_validation, true)],
-                    'loglevel' => LogLevel::ERROR
-                ]);
-                return false;
-            }
-            if ($address_validation['code'] === Address::ERR_VALIDATION_FATAL_RECOVERABLE) {
-                $this->logProcess('flush', [
-                    'message'  => 'Исправимая ошибка проверки адреса: {msg}',
-                    'data'     => ['msg' => $address_validation['message']],
-                    'loglevel' => LogLevel::INFO
-                ]);
-                return [['rate' => null, 'comment' => $address_validation['message']]];
-            }
-            $this->logProcess('flush', [
-                'message'  => 'Проверка полей адреса не пройдена: {data}',
-                'data'     => ['data' => var_export($address_validation, true)],
-                'loglevel' => LogLevel::INFO
-            ]);
-            throw new waException('Ошибка проверки полей адреса');
-        }
-
-        return true;
-    }
-
-    /**
-     * @param array $address
-     * @return bool
-     */
-    public function isAllowedAddress($address = array()): bool
-    {
-        $allowed = parent::isAllowedAddress($address);
-        if (!$allowed) {
-            return $allowed;
-        }
-
-        if (empty($address)) {
-            $address = $this->getAddress();
-        }
-
-        $city = (string)ifset($address, 'city', '');
-        $region_code = (string)ifset($address, 'region', '');
-
-        $this->logProcess('banned_location_setting', ['data' => $this->getSettings('location_rule')]);
-        $met_conditions = WaShippingUtils::isBannedLocation($city, $region_code, $this->getSettings('location_rule')['value']);
-
-        return $this->getSettings('location_rule')['value'] === 'except' ? $met_conditions : !$met_conditions;
     }
 
     /**
@@ -865,5 +796,14 @@ class dostavistaShipping extends waShipping
             'Syrnik\\dostavistaShipping\\Surcharge'             => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
             'Syrnik\\dostavistaShipping\\LoggerActionFormatter' => "wa-plugins/shipping/dostavista/lib/classes/LoggerActionFormatter.class.php"
         ]);
+    }
+
+    /**
+     * @param $field
+     * @return array|mixed|null
+     */
+    public function getAddress($field = null)
+    {
+        return parent::getAddress($field);
     }
 }

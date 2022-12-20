@@ -24,6 +24,8 @@ use waRegionModel;
  * @method string getRegionCode()
  * @method string getRegionIso3()
  * @method string getRegionName()
+ *
+ * @deprecated
  */
 class Address
 {

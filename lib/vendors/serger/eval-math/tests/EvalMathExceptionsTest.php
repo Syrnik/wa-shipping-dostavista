@@ -28,6 +28,11 @@ class EvalMathExceptionsTest extends TestCase
 {
     private $EvalMath;
 
+    protected function setUp()
+    {
+        $this->EvalMath = new EvalMath();
+    }
+
     /**
      * @throws AbstractEvalMathException
      */
@@ -207,10 +212,5 @@ class EvalMathExceptionsTest extends TestCase
     {
         $this->expectException(UnexpectedTokenException::class);
         $this->EvalMath->e('a=sin(0.1,)');
-    }
-
-    protected function setUp()
-    {
-        $this->EvalMath = new EvalMath();
     }
 }

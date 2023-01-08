@@ -23,15 +23,10 @@ class MethodsRegistry implements ArrayAccess, Countable
         return $this;
     }
 
-    public function offsetExists($offset)
+    public function unsetByName($name)
     {
-        return isset($this->methods[$offset]);
-    }
-
-    public function offsetGet($offset)
-    {
-        $m = $this->findByName($offset);
-        return $m ? $m->getArgumentCount() : null;
+        unset($this->methods[$name]);
+        return $this;
     }
 
     /**
@@ -43,6 +38,17 @@ class MethodsRegistry implements ArrayAccess, Countable
         return (isset($this->methods[$name]) and $this->methods[$name] instanceof AbstractMethod) ? $this->methods[$name] : null;
     }
 
+    public function offsetExists($offset)
+    {
+        return isset($this->methods[$offset]);
+    }
+
+    public function offsetGet($offset)
+    {
+        $m = $this->findByName($offset);
+        return $m ? $m->getArgumentCount() : null;
+    }
+
     public function offsetSet($offset, $value)
     {
         throw new RuntimeException('Use set() method instead');
@@ -51,12 +57,6 @@ class MethodsRegistry implements ArrayAccess, Countable
     public function offsetUnset($offset)
     {
         $this->unsetByName($offset);
-    }
-
-    public function unsetByName($name)
-    {
-        unset($this->methods[$name]);
-        return $this;
     }
 
     public function count()

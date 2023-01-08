@@ -172,126 +172,28 @@ class EvalMath
     }
 
     /**
-     * evaluate postfix notation
-     *
-     * @param $tokens
-     * @param array $vars
-     * @return bool|mixed|null
-     * @throws DivisionByZeroException
-     * @throws InternalErrorException
-     * @throws UndefinedVariableException
+     * @return array
      */
-    public function pfx($tokens, $vars = array())
+    public function vars()
     {
-        if ($tokens == false) {
-            return false;
-        }
-
-        $stack = new Stack;
-
-        foreach ($tokens as $token) { // nice and easy
-            if(is_array($token)) { // it's a function
-                $fnn = $token['fnn'];
-                $argcount = $token['argcount'];
-                if (in_array($fnn, $this->fb)) { // built-in function
-                    if (is_null($op1 = $stack->pop())) {
-                        throw new InternalErrorException();
-                    }
-                    $fnn = preg_replace("/^arc/", "a", $fnn); // for the 'arc' trig synonyms
-                    if ($fnn == 'ln') {
-                        $fnn = 'log';
-                    }
-                    eval('$stack->push(' . $fnn . '($op1));'); // perfectly safe eval()
-                } elseif (($m = $this->fc->findByName($fnn))) {
-                    $args = [];
-                    for ($i = $argcount-1; $i >= 0; $i--) {
-                        if (null === ($args[] = $stack->pop())) {
-                            throw new InternalErrorException();
-                        }
-                    }
-                    $res = $m->evaluate(...array_reverse($args));
-                    if ($res === FALSE) {
-                        throw new InternalErrorException();
-                    }
-                    $stack->push($res);
-                }elseif (array_key_exists($fnn, $this->f)) { // user function
-                    // get args
-                    $args = array();
-                    for ($i = count($this->f[$fnn]['args'])-1; $i >= 0; $i--) {
-                        if ( null === ($args[$this->f[$fnn]['args'][$i]] = $stack->pop())) {
-                            throw new InternalErrorException();
-                        }
-                    }
-                    $stack->push($this->pfx($this->f[$fnn]['func'], $args)); // yay... recursion!!!!
-                }
-// if the token is a binary operator, pop two values off the stack, do the operation, and push the result back on
-            } elseif (in_array($token, array('+', '-', '*', '/', '^', '>', '<', '==', '<=', '>=', '%'), true)) {
-                if (is_null($op2 = $stack->pop())) {
-                    throw new InternalErrorException();
-                }
-                if (is_null($op1 = $stack->pop())) {
-                    throw new InternalErrorException();
-                }
-                switch ($token) {
-                    case '+':
-                        $stack->push($op1 + $op2);
-                        break;
-                    case '-':
-                        $stack->push($op1 - $op2);
-                        break;
-                    case '*':
-                        $stack->push($op1 * $op2);
-                        break;
-                    case '/':
-                        if ($op2 == 0) {
-                            throw new DivisionByZeroException();
-                        }
-                        $stack->push($op1 / $op2);
-                        break;
-                    case '^':
-                        $stack->push(pow($op1, $op2));
-                        break;
-                    case '>':
-                        $stack->push((int)($op1 > $op2));
-                        break;
-                    case '<':
-                        $stack->push((int)($op1 < $op2));
-                        break;
-                    case '==':
-                        $stack->push((int)($op1 == $op2));
-                        break;
-                    case '<=':
-                        $stack->push((int)($op1 <= $op2));
-                        break;
-                    case '>=':
-                        $stack->push((int)($op1 >= $op2));
-                        break;
-                    case '%':
-                        $stack->push($op1 % $op2);
-                        break;
-                }
-
-                // if the token is a unary operator, pop one value off the stack, do the operation, and push it back on
-            } elseif ($token == "_") {
-                $stack->push(-1*$stack->pop());
-                // if the token is a number or variable, push it on the stack
-            } else {
-                if (is_numeric($token)) {
-                    $stack->push($token);
-                } elseif (array_key_exists($token, $this->v)) {
-                    $stack->push($this->v[$token]);
-                } elseif (array_key_exists($token, $vars)) {
-                    $stack->push($vars[$token]);
-                } else {
-                    throw new UndefinedVariableException();
-                }
-            }
-        }        // when we're out of tokens, the stack should have a single element, the final result
-        if ($stack->count != 1) {
-            throw new InternalErrorException();
-        }
-        return $stack->pop();
+        $output = $this->v;
+        unset($output['pi'], $output['e']);
+        return $output;
     }
+
+    /**
+     * @return array
+     */
+    public function funcs()
+    {
+        $output = array();
+        foreach ($this->f as $fnn=>$dat)
+            $output[] = $fnn . '(' . implode(',', $dat['args']) . ')';
+
+        return $output;
+    }
+
+    //===================== HERE BE INTERNAL METHODS ====================\\
 
     /**
      * Convert infix to postfix notation
@@ -319,10 +221,10 @@ class EvalMath
         $ops = ['+', '-', '*', '/', '^', '_', '%', '>', '<', '<=', '>=', '=='];
         $ops_r = array('+' => 0, '-' => 0, '*' => 0, '/' => 0, '^' => 1, '%' => 0); // right-associative operator?
         $ops_p = ['+' => 0, '-' => 0, '*' => 1, '/' => 1, '_' => 1, '^' => 2, '%' => 1, '>' => 3, '<' => 3, '<=' => 3, '>=' => 3, '==' => 3]; // operator precedence
-
+        
         $expecting_op = false; // we use this in syntax-checking the expression
                                // and determining when a - is a negation
-
+    
         if (preg_match('/[^\%\w\s+*^\/()\.,-<>=]/', $expr, $matches)) { // make sure the characters are all good
             throw new IllegalCharacterException([':character'=>$matches[0]]);
         }
@@ -468,10 +370,10 @@ class EvalMath
                 }
                 break;
             }
-            while (substr($expr, $index, 1) == ' ') { // step the index past whitespace (pretty much turns whitespace
+            while (substr($expr, $index, 1) == ' ') { // step the index past whitespace (pretty much turns whitespace 
                 $index++;                             // into implicit multiplication if no operator is there)
             }
-
+        
         }
         while (!is_null($op = $stack->pop())) { // pop everything off the stack and push onto output
             if ($op == '(') { // if there are (s on the stack, ()s were unbalanced
@@ -483,27 +385,125 @@ class EvalMath
         return $output;
     }
 
-    //===================== HERE BE INTERNAL METHODS ====================\\
-
     /**
-     * @return array
+     * evaluate postfix notation
+     *
+     * @param $tokens
+     * @param array $vars
+     * @return bool|mixed|null
+     * @throws DivisionByZeroException
+     * @throws InternalErrorException
+     * @throws UndefinedVariableException
      */
-    public function vars()
+    public function pfx($tokens, $vars = array())
     {
-        $output = $this->v;
-        unset($output['pi'], $output['e']);
-        return $output;
-    }
+        if ($tokens == false) {
+            return false;
+        }
+    
+        $stack = new Stack;
+        
+        foreach ($tokens as $token) { // nice and easy
+            if(is_array($token)) { // it's a function
+                $fnn = $token['fnn'];
+                $argcount = $token['argcount'];
+                if (in_array($fnn, $this->fb)) { // built-in function
+                    if (is_null($op1 = $stack->pop())) {
+                        throw new InternalErrorException();
+                    }
+                    $fnn = preg_replace("/^arc/", "a", $fnn); // for the 'arc' trig synonyms
+                    if ($fnn == 'ln') {
+                        $fnn = 'log';
+                    }
+                    eval('$stack->push(' . $fnn . '($op1));'); // perfectly safe eval()
+                } elseif (($m = $this->fc->findByName($fnn))) {
+                    $args = [];
+                    for ($i = $argcount-1; $i >= 0; $i--) {
+                        if (null === ($args[] = $stack->pop())) {
+                            throw new InternalErrorException();
+                        }
+                    }
+                    $res = $m->evaluate(...array_reverse($args));
+                    if ($res === FALSE) {
+                        throw new InternalErrorException();
+                    }
+                    $stack->push($res);
+                }elseif (array_key_exists($fnn, $this->f)) { // user function
+                    // get args
+                    $args = array();
+                    for ($i = count($this->f[$fnn]['args'])-1; $i >= 0; $i--) {
+                        if ( null === ($args[$this->f[$fnn]['args'][$i]] = $stack->pop())) {
+                            throw new InternalErrorException();
+                        }
+                    }
+                    $stack->push($this->pfx($this->f[$fnn]['func'], $args)); // yay... recursion!!!!
+                }
+// if the token is a binary operator, pop two values off the stack, do the operation, and push the result back on
+            } elseif (in_array($token, array('+', '-', '*', '/', '^', '>', '<', '==', '<=', '>=', '%'), true)) {
+                if (is_null($op2 = $stack->pop())) {
+                    throw new InternalErrorException();
+                }
+                if (is_null($op1 = $stack->pop())) {
+                    throw new InternalErrorException();
+                }
+                switch ($token) {
+                    case '+':
+                        $stack->push($op1 + $op2);
+                        break;
+                    case '-':
+                        $stack->push($op1 - $op2);
+                        break;
+                    case '*':
+                        $stack->push($op1 * $op2);
+                        break;
+                    case '/':
+                        if ($op2 == 0) {
+                            throw new DivisionByZeroException();
+                        }
+                        $stack->push($op1 / $op2);
+                        break;
+                    case '^':
+                        $stack->push(pow($op1, $op2));
+                        break;
+                    case '>':
+                        $stack->push((int)($op1 > $op2));
+                        break;
+                    case '<':
+                        $stack->push((int)($op1 < $op2));
+                        break;
+                    case '==':
+                        $stack->push((int)($op1 == $op2));
+                        break;
+                    case '<=':
+                        $stack->push((int)($op1 <= $op2));
+                        break;
+                    case '>=':
+                        $stack->push((int)($op1 >= $op2));
+                        break;
+                    case '%':
+                        $stack->push($op1 % $op2);
+                        break;
+                }
 
-    /**
-     * @return array
-     */
-    public function funcs()
-    {
-        $output = array();
-        foreach ($this->f as $fnn=>$dat)
-            $output[] = $fnn . '(' . implode(',', $dat['args']) . ')';
-
-        return $output;
+                // if the token is a unary operator, pop one value off the stack, do the operation, and push it back on
+            } elseif ($token == "_") {
+                $stack->push(-1*$stack->pop());
+                // if the token is a number or variable, push it on the stack
+            } else {
+                if (is_numeric($token)) {
+                    $stack->push($token);
+                } elseif (array_key_exists($token, $this->v)) {
+                    $stack->push($this->v[$token]);
+                } elseif (array_key_exists($token, $vars)) {
+                    $stack->push($vars[$token]);
+                } else {
+                    throw new UndefinedVariableException();
+                }
+            }
+        }        // when we're out of tokens, the stack should have a single element, the final result
+        if ($stack->count != 1) {
+            throw new InternalErrorException();
+        }
+        return $stack->pop();
     }
 }

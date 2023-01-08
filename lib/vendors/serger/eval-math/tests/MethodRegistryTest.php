@@ -17,6 +17,11 @@ class MethodRegistryTest extends TestCase
 {
     private $registry;
 
+    protected function setUp()
+    {
+        $this->registry = new MethodsRegistry();
+    }
+
     public function testSetFindUnset()
     {
         $r = $this->registry->set(new Maximum);
@@ -54,10 +59,5 @@ class MethodRegistryTest extends TestCase
         $this->assertEquals(2, $this->registry->count());
         $this->assertTrue(isset($this->registry['max']));
         $this->assertTrue(isset($this->registry['mmaaxx']));
-    }
-
-    protected function setUp()
-    {
-        $this->registry = new MethodsRegistry();
     }
 }

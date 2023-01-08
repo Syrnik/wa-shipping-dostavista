@@ -19,6 +19,11 @@ class EvalMathTest extends TestCase
      */
     private $evalMath;
 
+    protected function setUp()
+    {
+        $this->evalMath = new EvalMath();
+    }
+
     /**
      * @test
      * @dataProvider moduloOperatorData
@@ -133,8 +138,11 @@ class EvalMathTest extends TestCase
         ];
     }
 
-    protected function setUp()
+    public function testComplexEquations()
     {
-        $this->evalMath = new EvalMath();
+        $e = new EvalMath();
+        $e->e('a=2');
+        $res = $e->e('5+if(a>1,10,15)');
+        $this->assertEquals(15, $res);
     }
 }

@@ -3,11 +3,11 @@
         'name' => 'syrnik/shipping-dostavist',
         'pretty_version' => 'dev-develop',
         'version' => 'dev-develop',
-        'reference' => '0051a43b4414cb5850b44a6c4f7995fdc696c0bf',
+        'reference' => '33eb983d9295e0cf58475ebd5a2b9cddfcab5246',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'dev' => true,
+        'dev' => false,
     ),
     'versions' => array(
         'psr/log' => array(
@@ -49,7 +49,7 @@
         'syrnik/shipping-dostavist' => array(
             'pretty_version' => 'dev-develop',
             'version' => 'dev-develop',
-            'reference' => '0051a43b4414cb5850b44a6c4f7995fdc696c0bf',
+            'reference' => '33eb983d9295e0cf58475ebd5a2b9cddfcab5246',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),

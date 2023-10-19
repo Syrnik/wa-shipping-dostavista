@@ -299,6 +299,6 @@
             "install-path": "../webit/eval-math"
         }
     ],
-    "dev": true,
+    "dev": false,
     "dev-package-names": []
 }

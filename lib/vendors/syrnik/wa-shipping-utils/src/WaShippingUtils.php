@@ -319,7 +319,7 @@ class WaShippingUtils
             } catch (AbstractEvalMathException $e) {
                 throw (new CalcTotalCostException($e->getMessage()))->setFormula($handling_cost)->setFormulaVars($EvalMath->vars());
             }
-            return max(0.0, round($math_result, 2));
+            return max(0.0, round((float)$math_result, 2));
         }
 
         switch ($handling_base) {

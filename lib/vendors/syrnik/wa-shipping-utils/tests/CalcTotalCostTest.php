@@ -5,6 +5,8 @@
  * @license Webasyst
  */
 
+declare(strict_types=1);
+
 namespace Syrnik\WaShippingUtils\Tests;
 
 use PHPUnit\Framework\TestCase;
@@ -54,7 +56,8 @@ class CalcTotalCostTest extends TestCase
             [['carrier_cost'=>100, 'total_price'=>1000, 'total_raw_price'=>2000, 'handling_cost'=>'s+(s+y)*0.05', 'handling_base'=>'formula', 'free'=>''], 205],
             [['carrier_cost'=>100, 'total_price'=>1000, 'total_raw_price'=>2000, 'handling_cost'=>'S+(s+Y)*0.05', 'handling_base'=>'formula', 'free'=>''], 205],
             [['carrier_cost'=>100, 'total_price'=>1000, 'total_raw_price'=>2000, 'handling_cost'=>'s-300', 'handling_base'=>'formula', 'free'=>''], 0],
-            [['carrier_cost'=>100, 'total_price'=>1000, 'total_raw_price'=>2000, 'handling_cost'=>'-500', 'handling_base'=>'formula', 'free'=>''], 0]
+            [['carrier_cost'=>100, 'total_price'=>1000, 'total_raw_price'=>2000, 'handling_cost'=>'-500', 'handling_base'=>'formula', 'free'=>''], 0],
+            [['carrier_cost'=>100, 'total_price'=>1000, 'total_raw_price'=>2000, 'handling_cost'=>'100', 'handling_base'=>'formula', 'free'=>''], 100]
         ];
     }
 

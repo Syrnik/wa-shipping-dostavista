@@ -5,12 +5,6 @@
  * @license http://www.webasyst.com/terms/#eula Webasyst
  */
 
-require_once 'classes/InstanceCache.trait.php';
-require_once 'classes/LoggerForShippingPlugins.trait.php';
-
-use SergeR\CakeUtility\Hash;
-use Syrnik\dostavistaShipping\InstanceCache;
-use Syrnik\dostavistaShipping\LoggerForShippingPlugins;
 use Syrnik\WaShippingUtils;
 use Webit\Util\EvalMath\EvalMath;
 
@@ -44,16 +38,8 @@ use Webit\Util\EvalMath\EvalMath;
  */
 class dostavistaShipping extends waShipping
 {
-    use InstanceCache, LoggerForShippingPlugins;
-
-    /** @var waSmarty3View|null */
-    protected $_view;
-
-    /** @var waSystem|null */
-    protected $_system;
-
     /** @var null|array{time:int, holidays:array<string>, workdays:array<string>} */
-    protected $_schedule;
+    protected ?array $_schedule = null;
 
     /**
      * @return string
@@ -103,28 +89,12 @@ class dostavistaShipping extends waShipping
         $errors = [];
         $settings = $this->getSettings();
         $info = array(
-            'version'                 => $this->getProperties('version'),
-            'build'                   => $this->getProperties('build'),
-            'name'                    => $this->getProperties('name'),
-            'namespace'               => (string)Hash::get($params, 'namespace'),
-            'use_address_suggestions' => $this->isDadataAppReady(),
-            'url'                     => ['autocomplete' =>
-                                              wa()->getRouteUrl(
-                                                  sprintf("%s/frontend/shippingPlugin", $this->app_id),
-                                                  ['plugin_id' => $this->key, 'action_id' => 'dispatchAutocomplete'],
-                                                  true)],
-            'callback_support'        => $this->hasBackendSettingsSupport(),
-            'callback_url'            => $this->getBackendSettingsCallbackUrl()
+            'version'   => $this->getProperties('version'),
+            'build'     => $this->getProperties('build'),
+            'name'      => $this->getProperties('name'),
+            'namespace' => $params['namespace'] ?? '',
         );
-        /* // размеры плагин не использует
-                try {
-                    $info['dimensions'] = $this->getAppDimensionSupport();
-                } catch (waException $e) {
-                    $info['dimensions'] = 'not_supported';
-                    $errors[] = ['code' => $e->getCode(), 'message' => $e->getMessage()];
-                }
-        */
-        $view = $this->getView();
+        $view = new waSmarty3View(wa());
         $view->assign(compact('settings', 'info', 'errors'));
         $view->assign(['plugin_id' => $this->id, 'plugin_js_object' => 'ShippingDostavistaPluginSettings']);
 
@@ -178,7 +148,7 @@ class dostavistaShipping extends waShipping
                 case 'free_delivery':
                     if (is_string($data)) {
                         $data = trim($data);
-                        $data = strlen($data) ? WaShippingUtils::strToFloat($data) : null;
+                        $data = WaShippingUtils::toFloat($data, true);
                     }
                     break;
                 case 'surcharge':
@@ -208,90 +178,21 @@ class dostavistaShipping extends waShipping
      */
     private function castCustomerInterval(array $data): array
     {
-        $data['date'] = (bool)Hash::get($data, 'date');
-        $data['interval'] = (bool)Hash::get($data, 'interval');
-        $_intervals = (array)Hash::get($data, 'intervals');
+        $data['date'] = boolval($data['date'] ?? false);
+        $data['interval'] = boolval($data['interval'] ?? false);
+        $_intervals = (array)($data['intervals'] ?? []);
         $data['intervals'] = array_map(function ($v) {
-            $v['from'] = sprintf('%02d', max(1, min(23, (int)Hash::get($v, 'from'))));
-            $v['to'] = sprintf('%02d', max(1, min(23, (int)Hash::get($v, 'to'))));
-            $v['from_m'] = sprintf('%02d', max(0, min(59, (int)Hash::get($v, 'from_m'))));
-            $v['to_m'] = sprintf('%02d', max(0, min(59, (int)Hash::get($v, 'to_m'))));
-            $v['workday'] = (bool)Hash::get($v, 'workday');
-            $v['holiday'] = (bool)Hash::get($v, 'holiday');
-            $v['day'] = array_map('intval', (array)Hash::get($v, 'day'));
+            $v['from'] = sprintf('%02d', max(1, min(23, intval($v['from'] ?? 1))));
+            $v['to'] = sprintf('%02d', max(1, min(23, intval($v['to'] ?? 1))));
+            $v['from_m'] = sprintf('%02d', max(0, min(59, intval($v['from_m'] ?? 0))));
+            $v['to_m'] = sprintf('%02d', max(0, min(59, intval($v['to_m'] ?? 0))));
+            $v['workday'] = boolval($v['workday'] ?? false);
+            $v['holiday'] = boolval($v['holiday'] ?? false);
+            $v['day'] = array_map('intval', (array)($v['day'] ?? []));
             return $v;
         }, $_intervals);
 
         return $data;
-    }
-
-    /**
-     * @return bool
-     */
-    private function isDadataAppReady(): bool
-    {
-        try {
-            wa('alldadata');
-        } catch (Exception $e) {
-            return false;
-        }
-
-        return (new alldadataApi)->tokenAvailable();
-    }
-
-    /**
-     * В плагине есть поддержка для колбэков из настроек
-     *
-     * @return bool
-     */
-    private function hasBackendSettingsSupport(): bool
-    {
-        return $this->app_id === 'shop';
-    }
-
-    /**
-     * @return string|null
-     */
-    private function getBackendSettingsCallbackUrl(): ?string
-    {
-        return $this->hasBackendSettingsSupport() ? "?module=settings&action=shippingSetup&plugin_id=$this->id" : null;
-    }
-
-    /**
-     * @param bool $clean
-     * @return waSmarty3View
-     * @throws SmartyException
-     * @throws waException
-     * @deprecated
-     */
-    private function getView(bool $clean = false): waSmarty3View
-    {
-
-        if ($clean || !$this->_view) {
-            $view = new waSmarty3View($this->getSystem());
-            if (!$clean) {
-                $this->_view = $view;
-            }
-
-            return $view;
-        }
-
-        return $this->_view;
-    }
-
-    /**
-     * @return waSystem
-     * @throws waException
-     * @deprecated
-     */
-    private function getSystem(): waSystem
-    {
-        if ($this->_system) {
-            return $this->_system;
-        }
-
-        $this->_system = wa();
-        return $this->_system;
     }
 
     /**
@@ -465,7 +366,7 @@ class dostavistaShipping extends waShipping
         $result['interval'] = sprintf('%s-%s', $result['from'], $result['to']);
 
         $start = is_array($timestamp) ? reset($timestamp) : $timestamp;
-        $service_delivery_date='';
+        $service_delivery_date = '';
 
         do {
             $service_datetime = strtotime(sprintf('+%d days', $result['offset']++), $start);
@@ -721,40 +622,6 @@ class dostavistaShipping extends waShipping
         return [];
     }
 
-    /**
-     * Изготавливает ключ для кэширования результата запроса на расчёт
-     *
-     * @param $query
-     * @return string
-     */
-    private function getInstanceCacheKeyForCalc($query): string
-    {
-        $query['points'] = array_map(function ($v) {
-            $v['address'] = WaShippingUtils::mb_trim(mb_strtolower($v['address'], 'UTF-8'));
-            return $v;
-        }, $query['points']);
-
-        return md5(waUtils::jsonEncode($query));
-    }
-
-    /**
-     * @param $method
-     * @param $http_method
-     * @param array $data
-     * @param array $options
-     * @return array
-     * @throws waException
-     */
-    public function queryDostavistaApi($method, $http_method, array $data = [], array $options = []): array
-    {
-        $url = ifset($options, 'api_url', $this->getDostavistaApiUrl()) . "/$method";
-        $token = ifset($options, 'token', $this->token);
-
-        $headers = ['X-DV-Auth-Token' => $token] + (array)ifset($options, 'headers', []);
-
-        return (new waNet(['format' => waNet::FORMAT_JSON, 'expected_http_code' => '200,400'], $headers))->query($url, $data, $http_method);
-    }
-
     protected function createDostavistaOrder(): dostavistaShippingApiEntityOrder
     {
         $order = new dostavistaShippingApiEntityOrder;
@@ -777,27 +644,10 @@ class dostavistaShipping extends waShipping
         return $order;
     }
 
-    /**
-     * @return string
-     */
-    protected function getDostavistaApiUrl(): string
-    {
-        return $this->api_server === 'production' ? 'https://robot.dostavista.ru/api/business/1.1' : 'https://robotapitest.dostavista.ru/api/business/1.1';
-    }
-
-    /**
-     * @see waShipping::init()
-     * @todo Убрать это. Refactor!
-     */
     protected function init()
     {
         require_once 'vendors/autoload.php';
         parent::init();
-        waAutoload::getInstance()->add([
-            'Syrnik\\dostavistaShipping\\Address'               => "wa-plugins/shipping/dostavista/lib/classes/Address.class.php",
-            'Syrnik\\dostavistaShipping\\Surcharge'             => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
-            'Syrnik\\dostavistaShipping\\LoggerActionFormatter' => "wa-plugins/shipping/dostavista/lib/classes/LoggerActionFormatter.class.php"
-        ]);
     }
 
     /**

@@ -632,6 +632,8 @@ class dostavistaShipping extends waShipping
         $order = new dostavistaShippingApiEntityOrder;
         $order->setMatter('Shopping');
         $order->setTotalWeight((int)max(1, ceil((float)$this->getTotalWeight())));
+        $order->setIsClientNotificationEnabled($this->sms_notify['client']);
+        $order->setIsContactPersonNotificationEnabled('yes' === $this->sms_notify['receiver']);
 
         $start_point = (new dostavistaShippingApiEntityPoint)
             ->setAddress($this->location_from['name'])

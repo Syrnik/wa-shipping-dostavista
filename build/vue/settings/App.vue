@@ -58,14 +58,6 @@
                             class="hint">Если сумма заказа больше либо равна указанной, то доставка в ПВЗ будет бесплатной. Оставьте поле пустым, если доставка всегда платная. Поставьте 0, если доставка всегда бесплатная.</span></div></wa-field>
                 <location-rule name="Ограничения по географии" field="location_rule" :ns="info.namespace" v-model="location_rule"></location-rule>
                 <sms-notifications :ns="addns('sms_notify', info.namespace)" v-model="sms_notify"></sms-notifications>
-                <wa-field name="Подробный лог">
-                    <input type="hidden" :name="addns('detailed_log', info.namespace)" value="0">
-                    <div class="value no-shift">
-                        <label><input type="checkbox" :name="addns('detailed_log', info.namespace)" v-model="detailed_log"
-                                      value="1"> &mdash; записывать подробный лог в режиме отладки</label><br><span
-                            class="hint"><b>При включенном в системе режиме отладки</b> будет записываться не просто процесс расчёта, но и подробности по отправленным запросам и полученным ответам.</span>
-                    </div>
-                </wa-field>
             </tab>
             <tab name="Информация">
                 <about-page :info="info"></about-page>

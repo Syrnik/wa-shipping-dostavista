@@ -22,7 +22,6 @@ return array(
     ]],
     'holidays'            => ['value' => []],
     'workdays'            => ['value' => []],
-    'cash_on_delivery'    => ['value' => false],
     'insurance'           => ['value' => ['type' => 'none', 'value' => '']],
     'surcharge'           => ['value' => ''],
     'free_delivery'       => ['value' => null],

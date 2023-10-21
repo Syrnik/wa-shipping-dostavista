@@ -5,8 +5,9 @@
  * @license http://www.webasyst.com/terms/#eula Webasyst
  */
 
+use SergeR\Util\EvalMath\EvalMath;
+use SergeR\Util\EvalMath\Exception\EvalMathException;
 use Syrnik\WaShippingUtils;
-use Webit\Util\EvalMath\EvalMath;
 
 /**
  * @property-read string $token
@@ -28,8 +29,7 @@ use Webit\Util\EvalMath\EvalMath;
  *          holiday: bool
  *      }>
  * } $customer_interval
- * @property-read bool $cash_on_delivery
- * @property-read array{type:string, value:string] $insurance
+ * @property-read array{type:string, value:string} $insurance
  * @property-read array<string> $holidays
  * @property-read array<string> $workdays
  * @property-read array{type:string, value:string} $location_rule
@@ -38,6 +38,8 @@ use Webit\Util\EvalMath\EvalMath;
  */
 class dostavistaShipping extends waShipping
 {
+    protected const VARIANT_ID = 'dostavista_courier';
+
     /** @var null|array{time:int, holidays:array<string>, workdays:array<string>} */
     protected ?array $_schedule = null;
 
@@ -143,7 +145,6 @@ class dostavistaShipping extends waShipping
                 case 'exact_delivery_time':
                     $data = (int)$data;
                     break;
-                case 'cash_on_delivery':
                 case 'detailed_log':
                     $data = (bool)$data;
                     break;
@@ -207,7 +208,6 @@ class dostavistaShipping extends waShipping
         if (isset($settings['customer_interval'])) {
             $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
         }
-        $settings['cash_on_delivery'] = (bool)ifset($settings, 'cash_on_delivery', false);
 
         $settings = $this->_typecastSettings($settings);
 
@@ -419,12 +419,10 @@ class dostavistaShipping extends waShipping
 
     /**
      * @return array|string
+     * @throws waException
      */
     protected function calculate()
     {
-//        $limits_checker = new dostavistaShippingLimitsChecker($this);
-//        if (!$limits_checker->isAllowed()) return [['rate' => null, 'currency' => 'RUB', 'comment' => $limits_checker->getMessage()]];
-
         $calculation_order = $this->createDostavistaOrder();
         if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
             $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
@@ -437,7 +435,7 @@ class dostavistaShipping extends waShipping
 
 
         $result = [
-            'dostavista_courier' => [
+            self::VARIANT_ID => [
                 'rate'     => round((float)$response['order']['payment_amount'], 2),
                 'currency' => 'RUB',
                 'type'     => waShipping::TYPE_TODOOR
@@ -445,8 +443,8 @@ class dostavistaShipping extends waShipping
         ];
 
         if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
-            $result['dostavista_courier']['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
-            $result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
+            $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
+            $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
         }
 
 
@@ -455,7 +453,7 @@ class dostavistaShipping extends waShipping
         } catch (waException $e) {
             return 'Ошибка расчёта';
         }
-        $result['dostavista_courier']['est_delivery'] = $delivery_times['estimate'];
+        $result[self::VARIANT_ID]['est_delivery'] = $delivery_times['estimate'];
 
         $setting = $this->customer_interval;
         if (!empty($setting['intervals'])) {
@@ -476,8 +474,8 @@ class dostavistaShipping extends waShipping
                     $key = $interval['interval'];
                     $intervals[$key] = array_keys($interval['day']);
                     $intervals[$key]['offset'] = $interval['offset'];
-                    if (!isset($result['dostavista_courier']['delivery_date'])
-                        || (strtotime($result['dostavista_courier']['delivery_date']) > strtotime($interval['start_date']))
+                    if (!isset($result[self::VARIANT_ID]['delivery_date'])
+                        || (strtotime($result[self::VARIANT_ID]['delivery_date']) > strtotime($interval['start_date']))
                     ) {
                         $delivery['delivery_date'] = $interval['start_date'];
                     }
@@ -501,8 +499,8 @@ class dostavistaShipping extends waShipping
                 'holidays'    => $this->holidays,
                 'workdays'    => $this->workdays,
             );
-            $result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR] =
-                ($result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR] ?? []) + $custom_data;
+            $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR] =
+                ($result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR] ?? []) + $custom_data;
         }
 
         return $result;
@@ -555,6 +553,8 @@ class dostavistaShipping extends waShipping
     }
 
     /**
+     * Превращает адрес в строку типа "Свердловская область, Екатеринбург, Иркутский, 2"
+     *
      * @return string
      */
     protected function stringifyAddress(): string
@@ -580,29 +580,18 @@ class dostavistaShipping extends waShipping
     }
 
     /**
-     * Возвращает сумму наложки для получения с клиента в виде массива для добавления к point
-     * при расчёте
-     *
-     * @return array
-     */
-    protected function getCashOnDeliveryQueryField(): array
-    {
-        return $this->cash_on_delivery ? ['taking_amount' => number_format($this->getTotalPrice(), 2, '.', '')] : [];
-    }
-
-    /**
      * Настройка с оценочной стоимостью (стоимостью страховки)
-     * Выдаёт массив со значением для добавления к запросу
+     * Выдаёт значение оценочной стоимости для поля со страховкой
      *
-     * @return array
+     * @return dostavistaShippingApiEntityMoney
      */
-    protected function getInsuranceQueryField(): array
+    protected function getInsuranceAppraisedValue(): dostavistaShippingApiEntityMoney
     {
         switch ($this->insurance['type']) {
             case 'raw':
-                return ['insurance_amount' => number_format($this->getTotalRawPrice(), 2, '.', '')];
+                return new dostavistaShippingApiEntityMoney((float)$this->getTotalRawPrice());
             case 'total':
-                return ['insurance_amount' => number_format($this->getTotalPrice(), 2, '.', '')];
+                return new dostavistaShippingApiEntityMoney((float)$this->getTotalPrice());
             case 'custom':
                 $formula = trim($this->insurance['value']);
                 if (!strlen($formula)) {
@@ -610,21 +599,21 @@ class dostavistaShipping extends waShipping
                 }
                 $formula = strtolower($formula);
                 $formula = str_replace(',', '.', $formula);
-                if ((strpos($formula, 'w') === false) && (strpos($formula, 't') === false)) {
-                    return ['insurance_amount' => number_format((float)$formula, 2, '.', '')];
+                try {
+                    $math = new EvalMath();
+                    $math->evaluate('w=' . WaShippingUtils::monetaryString((float)$this->getTotalRawPrice()));
+                    $math->evaluate('t=' . WaShippingUtils::monetaryString((float)$this->getTotalPrice()));
+                    $value = $math->evaluate($formula);
+                    if ($value === false) {
+                        $value = 0;
+                    } else $value = max((float)$value, 0);
+                } catch (EvalMathException $e) {
+                    $value = 0;
                 }
-                $math = new EvalMath();
-                $math->suppress_errors = true;
-                $math->evaluate('w=' . str_replace(',', '.', $this->getTotalRawPrice()));
-                $math->evaluate('t=' . str_replace(',', '.', $this->getTotalPrice()));
-                $value = $math->evaluate($formula);
-                if ($value === false) {
-                    //todo log
-                }
-                return ['insurance_amount' => number_format((float)$value, 2, '.', '')];
+                return new dostavistaShippingApiEntityMoney($value);
         }
 
-        return [];
+        return new dostavistaShippingApiEntityMoney();
     }
 
     protected function createDostavistaOrder(): dostavistaShippingApiEntityOrder
@@ -632,14 +621,16 @@ class dostavistaShipping extends waShipping
         $order = new dostavistaShippingApiEntityOrder;
         $order->setMatter('Shopping');
         $order->setTotalWeight((int)max(1, ceil((float)$this->getTotalWeight())));
+
         $start_point = (new dostavistaShippingApiEntityPoint)
             ->setAddress($this->location_from['name'])
             ->setContactPerson(new dostavistaShippingApiEntityContactPerson('Отправитель', '79999999999'));
+
         $destination_point = (new dostavistaShippingApiEntityPoint)
             ->setAddress($this->stringifyAddress())
             ->setContactPerson(new dostavistaShippingApiEntityContactPerson('Отправитель', '79999999999'));
 
-        $order->setInsuranceAmount(new dostavistaShippingApiEntityMoney((float)$this->getTotalRawPrice()));
+        $order->setInsuranceAmount($this->getInsuranceAppraisedValue());
 
         if ($this->isCashOnDeliverySelected())
             $destination_point->setTakingAmount(new dostavistaShippingApiEntityMoney((float)$this->getTotalPrice()));

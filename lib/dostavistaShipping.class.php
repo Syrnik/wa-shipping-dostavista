@@ -8,12 +8,9 @@
 require_once 'classes/InstanceCache.trait.php';
 require_once 'classes/LoggerForShippingPlugins.trait.php';
 
-use Psr\Log\LogLevel;
 use SergeR\CakeUtility\Hash;
-use Syrnik\dostavistaShipping\Address;
 use Syrnik\dostavistaShipping\InstanceCache;
 use Syrnik\dostavistaShipping\LoggerForShippingPlugins;
-use Syrnik\dostavistaShipping\Surcharge;
 use Syrnik\WaShippingUtils;
 use Webit\Util\EvalMath\EvalMath;
 
@@ -79,7 +76,7 @@ class dostavistaShipping extends waShipping
      */
     public function allowedAddress(): array
     {
-        return [['country' => 'rus', 'region' => ['77', '50']]];
+        return [['country' => 'rus']];
     }
 
     /**
@@ -468,6 +465,7 @@ class dostavistaShipping extends waShipping
         $result['interval'] = sprintf('%s-%s', $result['from'], $result['to']);
 
         $start = is_array($timestamp) ? reset($timestamp) : $timestamp;
+        $service_delivery_date='';
 
         do {
             $service_datetime = strtotime(sprintf('+%d days', $result['offset']++), $start);
@@ -521,102 +519,34 @@ class dostavistaShipping extends waShipping
      */
     protected function calculate()
     {
-        $this->startLogger(waSystemConfig::isDebug() ? ($this->detailed_log ? LogLevel::DEBUG : LogLevel::INFO) : LogLevel::ALERT);
-        $this->logProcess('start');
+//        $limits_checker = new dostavistaShippingLimitsChecker($this);
+//        if (!$limits_checker->isAllowed()) return [['rate' => null, 'currency' => 'RUB', 'comment' => $limits_checker->getMessage()]];
 
-        $limits_checker = new dostavistaShippingLimitsChecker($this);
-        if (!$limits_checker->isAllowed()) return [['rate' => null, 'currency' => 'RUB', 'comment' => $limits_checker->getMessage()]];
+        $calculation_order = $this->createDostavistaOrder();
+        $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
+            ->CalculateOrder($calculation_order);
 
-        $address = new Address($this->getAddress());
-        $this->logProcess('address', ['data' => ['address' => $address]]);
+        if ($error = $this->getError($response))
+            return [['rate' => null, 'comment' => $error]];
 
-        $query = [
-                'matter'                                 => 'Shopping',
-                'total_weight_kg'                        => (int)$this->getTotalWeight(),
-                'is_client_notification_enabled'         => $this->sms_notify['client'],
-                'is_contact_person_notification_enabled' => $this->getContactPersonNotificationOption(),
-                'points'                                 => [
-                    [
-                        'address' => $this->location_from['name']
-                    ],
-                    [
-                        'address' => $this->stringifyAddress()
-                    ] + $this->getCashOnDeliveryQueryField()
-                ]
-            ]
-            + $this->getInsuranceQueryField();
-
-        $this->logProcess('json_dump', ['message' => "Данные для запроса\n{json}", 'data' => $query]);
-
-        $cache = $this->getInstanceCache();
-        $cache_group = $this->getInstanceCacheGroup('calc');
-        $cache_key = $this->getInstanceCacheKeyForCalc($query);
-
-        $response = $cache->get($cache_key, $cache_group);
-        if (!is_array($response)) {
-            $this->logProcess('start_timer', ['data' => ['name' => 'calc']]);
-            try {
-                $response = $this->queryDostavistaApi('calculate-order', waNet::METHOD_POST, $query);
-            } catch (Exception $e) {
-                $this->logProcess('exception', ['data' => ['exception' => $e], 'loglevel' => LogLevel::CRITICAL]);
-                $this->logProcess('flush', ['data' => ['message' => 'Ошибка при выполнении запроса к серверу. Окончание']]);
-                return 'Ошибка расчёта';
-            }
-            $this->logProcess('end_timer', ['data' => ['name' => 'calc'], 'message' => 'Запрос к серверу Dostavista выполнен за {total}с.', 'loglevel' => LogLevel::INFO]);
-            $cache->set($cache_key, $response, 600, $cache_group);
-        } else {
-            $this->logProcess('custom', ['message' => 'Результат расчёта извлечён из кэша', 'loglevel' => LogLevel::INFO]);
-        }
-
-        $this->logProcess('json_dump', ['message' => "Ответ сервера Dostavista:\n{json}", 'data' => $response]);
-
-        if (!$response['is_successful']) {
-            $this->logProcess('flush', ['message' => 'Расчёт доставки не удался', 'loglevel' => LogLevel::INFO]);
-            return [
-                'rate'    => null,
-                'comment' => 'Доставка по указанному адресу невозможна'
-            ];
-        }
 
         $result = [
             'dostavista_courier' => [
-                'rate'     => round((float)Hash::get($response, 'order.payment_amount'), 2),
+                'rate'     => round((float)$response['order']['payment_amount'], 2),
                 'currency' => 'RUB',
                 'type'     => waShipping::TYPE_TODOOR
             ]
         ];
 
-        $surcharge = (new Surcharge([
-            'CalculatedDeliveryCost' => $result['dostavista_courier']['rate'],
-            'OrderTotal'             => $this->getTotalPrice(),
-            'OrderRawTotal'          => $this->getTotalRawPrice(),
-            'FreeDelivery'           => $this->getSettings('free_delivery')
-        ]))->setFormula($this->getSettings('surcharge'));
-        $this->logProcess('surcharge', ['data' => ['surcharge' => $surcharge]]);
-
-        try {
-            $result['dostavista_courier']['rate'] = $surcharge->calculate();
-            $this->logProcess('custom', ['message' => 'Итоговая стоимость доставки: {price}', 'data' => ['price' => number_format($result['dostavista_courier']['rate'], 2, '.', '')], 'loglevel' => LogLevel::INFO]);
-        } catch (waException $e) {
-            $this->logProcess('exception', ['data' => ['exception' => $e]]);
-            $this->logProcess('flush', ['message' => 'Расчёт прерван']);
-            return 'Ошибка расчёта';
-        }
-
-        if (($destination_address = (string)Hash::get($response, 'order.points.1.address'))) {
+        if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
             $result['dostavista_courier']['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
-            $result = Hash::insert(
-                $result,
-                'dostavista_courier.custom_data.' . waShipping::TYPE_TODOOR,
-                ['additional' => "Доставка курьером по адресу: " . waString::escapeAll($destination_address)]
-            );
+            $result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
         }
+
 
         try {
             $delivery_times = $this->getDeliveryTimes();
         } catch (waException $e) {
-            $this->logProcess('exception', ['data' => ['exception' => $e], 'loglevel' => LogLevel::ERROR]);
-            $this->logProcess('flush', ['message' => 'Расчёт прерван']);
             return 'Ошибка расчёта';
         }
         $result['dostavista_courier']['est_delivery'] = $delivery_times['estimate'];
@@ -627,10 +557,11 @@ class dostavistaShipping extends waShipping
             try {
                 $date_format = waDateTime::getFormat('date');
             } catch (waException $e) {
-                $this->logProcess('exception', ['data' => ['exception' => $e], 'loglevel' => LogLevel::ERROR]);
                 $date_format = 'd.m.Y';
             }
             $offset = null;
+            $delivery = null;
+            $placeholder = "";
 
             foreach ($setting['intervals'] as $interval) {
                 $interval = $this->getInterval($interval, $delivery_times['timestamp']);
@@ -645,17 +576,17 @@ class dostavistaShipping extends waShipping
                         $delivery['delivery_date'] = $interval['start_date'];
                     }
 
-                    if (($offset === null) || ($offset > $interval['offset'])) {
+                    if ((null === $offset) || ($offset > $interval['offset'])) {
                         $offset = $interval['offset'];
                     }
                 }
             }
 
             try {
-                $placeholder = waDateTime::format($date_format, $delivery['delivery_date']);
+                if ($delivery ?? false)
+                    $placeholder = waDateTime::format($date_format, $delivery['delivery_date']);
             } catch (waException $e) {
-                $this->logProcess('exception', ['data' => ['exception' => $e], 'loglevel' => LogLevel::ERROR]);
-                $placeholder = "";
+
             }
             $custom_data = array(
                 'offset'      => $offset,
@@ -664,11 +595,26 @@ class dostavistaShipping extends waShipping
                 'holidays'    => $this->holidays,
                 'workdays'    => $this->workdays,
             );
-            $result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR] = (array)Hash::get($result, 'dostavista_courier.custom_data.' . waShipping::TYPE_TODOOR) + $custom_data;
+            $result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR] =
+                ($result['dostavista_courier']['custom_data'][waShipping::TYPE_TODOOR] ?? []) + $custom_data;
         }
-        $this->logProcess('flush');
 
         return $result;
+    }
+
+    protected function getError(array $response): ?string
+    {
+        if (!$response['is_successful']) return 'Доставка по указанному адресу невозможна';
+        if ($warnings = $response['warnings'] ?? []) {
+            if (!in_array('invalid_parameters', $warnings)) {
+                return 'Доставка по указанному адресу невозможна';
+            }
+        }
+        if (($parameter_warnings = $response['parameter_warnings'] ?? []) || in_array('invalid_parameters', $warnings)) {
+            return 'Доставка по указанному адресу невозможна';
+        }
+
+        return null;
     }
 
     /**
@@ -709,8 +655,11 @@ class dostavistaShipping extends waShipping
     {
         $address = $this->getAddress();
         $city = trim($address['city'] ?? '');
-        $searchable_city = WaShippingUtils::replaceYo(WaShippingUtils::mb_trim(mb_strtolower($city, 'UTF-8')));
-        if ('москва' === $searchable_city) $region_name = '';
+        $searchable_city = WaShippingUtils::replaceYo(trim(mb_strtolower($city, 'UTF-8')));
+        if (
+            ('москва' === $searchable_city && in_array($address['region'], ['77', '50'])) ||
+            ('санкт-петербург' === $searchable_city && in_array($address['region'], ['78', '47']))
+        ) $region_name = '';
         else {
             $region_data = (new waRegionModel)->get('rus', $address['region']);
             $region_name = $region_data['name'] ?? '';
@@ -806,6 +755,28 @@ class dostavistaShipping extends waShipping
         return (new waNet(['format' => waNet::FORMAT_JSON, 'expected_http_code' => '200,400'], $headers))->query($url, $data, $http_method);
     }
 
+    protected function createDostavistaOrder(): dostavistaShippingApiEntityOrder
+    {
+        $order = new dostavistaShippingApiEntityOrder;
+        $order->setMatter('Shopping');
+        $order->setTotalWeight((int)max(1, ceil((float)$this->getTotalWeight())));
+        $start_point = (new dostavistaShippingApiEntityPoint)
+            ->setAddress($this->location_from['name'])
+            ->setContactPerson(new dostavistaShippingApiEntityContactPerson('Отправитель', '79999999999'));
+        $destination_point = (new dostavistaShippingApiEntityPoint)
+            ->setAddress($this->stringifyAddress())
+            ->setContactPerson(new dostavistaShippingApiEntityContactPerson('Отправитель', '79999999999'));
+
+        $order->setInsuranceAmount(new dostavistaShippingApiEntityMoney((float)$this->getTotalRawPrice()));
+
+        if ($this->isCashOnDeliverySelected())
+            $destination_point->setTakingAmount(new dostavistaShippingApiEntityMoney((float)$this->getTotalPrice()));
+
+        $order->setPoints($start_point, $destination_point);
+
+        return $order;
+    }
+
     /**
      * @return string
      */
@@ -827,5 +798,16 @@ class dostavistaShipping extends waShipping
             'Syrnik\\dostavistaShipping\\Surcharge'             => "wa-plugins/shipping/dostavista/lib/classes/Surcharge.class.php",
             'Syrnik\\dostavistaShipping\\LoggerActionFormatter' => "wa-plugins/shipping/dostavista/lib/classes/LoggerActionFormatter.class.php"
         ]);
+    }
+
+    /**
+     * Истина, если заказ с оплатой при получении. Учитывает настройки плагина
+     *
+     * @return bool
+     */
+    public function isCashOnDeliverySelected(): bool
+    {
+        $selected = $this->getSelectedPaymentTypes();
+        return !in_array(waShipping::PAYMENT_TYPE_PREPAID, $selected, true);
     }
 }

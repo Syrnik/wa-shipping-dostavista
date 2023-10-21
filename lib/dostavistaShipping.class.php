@@ -41,6 +41,8 @@ class dostavistaShipping extends waShipping
     /** @var null|array{time:int, holidays:array<string>, workdays:array<string>} */
     protected ?array $_schedule = null;
 
+    protected dostavistaShippingCache $cache;
+
     /**
      * @return string
      */
@@ -424,8 +426,11 @@ class dostavistaShipping extends waShipping
 //        if (!$limits_checker->isAllowed()) return [['rate' => null, 'currency' => 'RUB', 'comment' => $limits_checker->getMessage()]];
 
         $calculation_order = $this->createDostavistaOrder();
-        $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
-            ->CalculateOrder($calculation_order);
+        if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
+            $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
+                ->CalculateOrder($calculation_order);
+            $this->getCache()->saveCalculation($response, $calculation_order, $this->token, 'test' === $this->api_server);
+        }
 
         if ($error = $this->getError($response))
             return [['rate' => null, 'comment' => $error]];
@@ -659,5 +664,19 @@ class dostavistaShipping extends waShipping
     {
         $selected = $this->getSelectedPaymentTypes();
         return !in_array(waShipping::PAYMENT_TYPE_PREPAID, $selected, true);
+    }
+
+    /**
+     * @return dostavistaShippingCache
+     * @throws waException
+     */
+    public function getCache(): dostavistaShippingCache
+    {
+        if (isset($this->cache)) return $this->cache;
+        $cache = wa()->getCache('dostavista_shipping', 'webasyst');
+        if (!$cache) $cache = wa()->getCache('default', 'webasyst');
+        if (!$cache) $cache = new waCache(new waFileCacheAdapter([]), 'webasyst');
+
+        return new dostavistaShippingCache($cache);
     }
 }

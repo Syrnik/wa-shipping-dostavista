@@ -35,6 +35,8 @@ use Syrnik\WaShippingUtils;
  * @property-read array{type:string, value:string} $location_rule
  * @property-read bool $detailed_log
  * @property-read array{client:bool, receiver:string} $sms_notify
+ * @property-read string $surcharge
+ * @property-read ?float $free_delivery
  */
 class dostavistaShipping extends waShipping
 {
@@ -434,13 +436,22 @@ class dostavistaShipping extends waShipping
             return [['rate' => null, 'comment' => $error]];
 
 
+        $rate = (float)$response['order']['payment_amount'];
         $result = [
             self::VARIANT_ID => [
-                'rate'     => round((float)$response['order']['payment_amount'], 2),
                 'currency' => 'RUB',
                 'type'     => waShipping::TYPE_TODOOR
             ]
         ];
+
+        $result[self::VARIANT_ID]['rate'] = WaShippingUtils::calcTotalCost(
+            $rate,
+            (float)$this->getTotalPrice(),
+            (float)$this->getTotalRawPrice(),
+            $this->surcharge,
+            'formula',
+            (string)$this->free_delivery
+        );
 
         if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
             $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);

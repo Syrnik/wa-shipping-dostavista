@@ -12,7 +12,8 @@ $files = [
     'lib/classes/LoggerActionFormatter.class.php',
     'lib/classes/Surcharge.class.php',
     'lib/classes/InstanceCache.trait.php',
-    'lib/classes/Address.class.php'
+    'lib/classes/Address.class.php',
+    'lib/vendors/webit'
 ];
 
 foreach ($files as $file) {

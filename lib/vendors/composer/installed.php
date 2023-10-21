@@ -3,11 +3,11 @@
         'name' => 'syrnik/shipping-dostavist',
         'pretty_version' => 'dev-develop',
         'version' => 'dev-develop',
-        'reference' => '33eb983d9295e0cf58475ebd5a2b9cddfcab5246',
+        'reference' => '8654d1172b7585e62b79199e63fa528cfe205cdf',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'dev' => false,
+        'dev' => true,
     ),
     'versions' => array(
         'psr/log' => array(
@@ -49,7 +49,7 @@
         'syrnik/shipping-dostavist' => array(
             'pretty_version' => 'dev-develop',
             'version' => 'dev-develop',
-            'reference' => '33eb983d9295e0cf58475ebd5a2b9cddfcab5246',
+            'reference' => '8654d1172b7585e62b79199e63fa528cfe205cdf',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
@@ -61,15 +61,6 @@
             'reference' => '700532e6cf208c673129e29bd10648e822ed8b27',
             'type' => 'library',
             'install_path' => __DIR__ . '/../syrnik/wa-shipping-utils',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'webit/eval-math' => array(
-            'pretty_version' => '1.0.1',
-            'version' => '1.0.1.0',
-            'reference' => '0e7c3a1e0f536b826f04553726c112996b52ded6',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../webit/eval-math',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

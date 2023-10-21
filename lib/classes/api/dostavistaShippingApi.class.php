@@ -45,7 +45,12 @@ class dostavistaShippingApi
         return $this->api_token;
     }
 
-    public function CalculateOrder(dostavistaShippingApiEntityOrder $order)
+    /**
+     * @param dostavistaShippingApiEntityOrder $order
+     * @return array
+     * @throws waException
+     */
+    public function CalculateOrder(dostavistaShippingApiEntityOrder $order): array
     {
         return $this->_query(new dostavistaShippingApiQueryCalculateOrder($order));
     }

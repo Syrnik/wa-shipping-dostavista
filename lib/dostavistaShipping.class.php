@@ -110,7 +110,9 @@ class dostavistaShipping extends waShipping
         $view->assign(compact('settings', 'info', 'errors'));
         $view->assign(['plugin_id' => $this->id, 'plugin_js_object' => 'ShippingDostavistaPluginSettings']);
 
-        return $view->fetch($this->path . '/templates/settings.html');
+        $template_name = '1.3' === wa()->whichUI() ? 'settings-legacy' : 'settings';
+
+        return $view->fetch($this->path . "/templates/$template_name.html");
     }
 
     /**

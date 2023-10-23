@@ -27,7 +27,7 @@
                 defer.resolve();
                 return;
             }
-            $.getScript('{$wa_static_url}wa-plugins/shipping/{$plugin_id}/js/settings.js').done(function () {
+            $.getScript('{$wa_static_url}wa-plugins/shipping/{$plugin_id}/js/settings-legacy.js').done(function () {
                 defer.resolve();
             });
         })).done(function () {

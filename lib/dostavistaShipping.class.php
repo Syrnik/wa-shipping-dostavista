@@ -11,6 +11,7 @@ use Syrnik\WaShippingUtils;
 
 /**
  * @property-read string $token
+ * @property-read string[] $operating_region
  * @property-read array $location_from = ['name'=>(string)]
  * @property-read string $api_server = 'test'|'production'
  * @property-read string $delivery_time Время доставки
@@ -68,7 +69,13 @@ class dostavistaShipping extends waShipping
      */
     public function allowedAddress(): array
     {
-        return [['country' => 'rus']];
+        return [['country' => 'rus', 'region' => $this->operating_region]];
+    }
+
+    public function isAllowedAddress($address = array()): bool
+    {
+        if (!$this->operating_region) return false;
+        return parent::isAllowedAddress($address);
     }
 
     /**
@@ -140,17 +147,11 @@ class dostavistaShipping extends waShipping
     {
         foreach ($settings as $key => $data) {
             switch ($key) {
+                case 'operating_region':
+                    $data = array_values((array)$data);
+                    break;
                 case 'customer_interval':
                     $data = $this->castCustomerInterval((array)$data);
-                    break;
-                case 'location_rule':
-                    $type = (string)ifset($data, 'type', 'except');
-                    $value = (string)ifset($data, 'value', '');
-                    $type = trim(strtolower($type));
-                    if (!in_array($type, ['except', 'only'])) {
-                        $type = 'except';
-                    }
-                    $data = ['type' => $type, 'value' => WaShippingUtils::mb_trim($value)];
                     break;
                 case 'exact_delivery_time':
                     $data = (int)$data;

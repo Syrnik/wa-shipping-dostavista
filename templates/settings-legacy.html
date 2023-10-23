@@ -19,6 +19,21 @@
     #shipping-{$plugin_id}-settings-app .workdays .value .vdp-datepicker .cell.highlighted { background-color: #fcc }
     #shipping-{$plugin_id}-settings-app .workdays .value .vdp-datepicker .cell.selected.highlighted { background-color: #fcc }
     #shipping-{$plugin_id}-settings-app .workdays .vue-dates-list > li { background-color: #fcc; border-color: rosybrown }
+    #w-dostavista-region-dialog .dialog-window > div { height: 100% }
+    #w-dostavista-region-select-form { height: 100% }
+    #w-dostavista-region-select-form .dialog-content-indent { height: 100%; box-sizing: border-box }
+    .w-shipping-dostavista-region-list {
+        list-style: none;
+    }
+    .w-shipping-dostavista-region-list-item { padding: 0.25em 3px; }
+    .w-shipping-dostavista-region-list-item label { display: block; }
+    .w-shipping-dostavista-region-list-item:hover { background-color: #f0f0f0; }
+    @media screen and (min-width: 1280px) {
+        .w-shipping-dostavista-region-list { column-count: 3; column-gap: 1em; }
+    }
+    @media screen and (min-width: 960px) and (max-width: 1279px) {
+        .w-shipping-dostavista-region-list { column-count: 2; column-gap: 0.75em; }
+    }
 </style>
 <script type="text/javascript">
     $(function () {
@@ -33,8 +48,8 @@
         })).done(function () {
             {$plugin_js_object}.run({
                 el: '#{$plugin_id}-shipping-settings',
-                info: {$info|json_encode},
-                settings: {$settings|json_encode}
+                info: {$info|json_encode:256},
+                settings: {$settings|json_encode:256}
             });
         });
     })

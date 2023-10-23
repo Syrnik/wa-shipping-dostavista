@@ -100,6 +100,12 @@ class dostavistaShipping extends waShipping
             'name'      => $this->getProperties('name'),
             'namespace' => $params['namespace'] ?? '',
         );
+
+        $info['lists']['regions'] = array_values(array_map(
+                fn($r) => ['code' => $r['code'], 'name' => $r['name']],
+                (new waRegionModel)->getByCountry('rus'))
+        );
+
         $view = new waSmarty3View(wa());
         $view->assign(compact('settings', 'info', 'errors'));
         $view->assign(['plugin_id' => $this->id, 'plugin_js_object' => 'ShippingDostavistaPluginSettings']);

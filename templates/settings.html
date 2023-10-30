@@ -1,0 +1,22 @@
+<div id="w-shipping-dostavista-settings"></div>
+<script>
+    (function () {
+        $.wa.loadSources([
+            {
+                id: "dostavista-shipping-settings-js",
+                type: "js",
+                uri: "{$wa_static_url}wa-plugins/shipping/dostavista/js/settings.js?v={$info.version}"
+            },
+            {
+                id: "dostavista-shipping-settings-css",
+                type: "css",
+                uri: "{$wa_static_url}wa-plugins/shipping/dostavista/css/settings.css?v={$info.version}"
+            }
+        ]).done(
+            () => ShippingPecPluginSettings({
+                info: {$info|json_encode:256},
+                settings: {$settings|json_encode:256}
+            }).mount('#w-shipping-dostavista-settings')
+        );
+    })();
+</script>

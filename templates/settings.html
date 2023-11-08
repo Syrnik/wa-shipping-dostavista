@@ -13,7 +13,7 @@
                 uri: "{$wa_static_url}wa-plugins/shipping/dostavista/css/settings.css?v={$info.version}"
             }
         ]).done(
-            () => ShippingPecPluginSettings({
+            () => ShippingDostavistaPluginSettings({
                 info: {$info|json_encode:256},
                 settings: {$settings|json_encode:256}
             }).mount('#w-shipping-dostavista-settings')

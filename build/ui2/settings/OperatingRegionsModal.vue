@@ -1,20 +1,26 @@
 <script setup>
 
 import WaDialog from "../components/waDialog.vue";
-import {ref} from "vue";
+import {ref, unref} from "vue";
+import {json} from "../../../../../../wa-content/js/d3/7.0.1/d3";
 
 const props = defineProps({value: {type: Array, default: () => []}, regionList: {type: Array, default: () => []}}),
     emit = defineEmits(['selected', 'close']),
     selection = ref(props.value);
+
+function submit() {
+  emit('selected', JSON.parse(JSON.stringify(selection.value)));
+  emit('close');
+}
 </script>
 
 <template>
   <wa-dialog @close="$emit('close')" class="w-shipping-dostavista-operating-region-dialog">
     <template #header><h3>Выберите регион</h3></template>
-      <template #footer>
-          <button class="button">Выбрать</button>
-          <button class="button gray">отмена</button>
-      </template>
+    <template #footer>
+      <button class="button" @click.prevent="submit">Выбрать</button>
+      <button class="button gray" @click.prevent="$emit('close')">отмена</button>
+    </template>
     <ul class="w-shipping-dostavista-region-list">
       <li class="w-shipping-dostavista-region-list-item" v-for="r in regionList">
         <label>

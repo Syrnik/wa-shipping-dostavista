@@ -20,14 +20,12 @@ const selectedRegions = computed(() => props.regionList.filter(r => selection.va
 <template>
     <wa-field name="Регион доставки">
         <template v-for="(r, idx) in selectedRegions"><input :name="addns('', ns)" :value="r.code"
-                                                             type="hidden">{{ r.name }}
-            <template v-if="idx < selectedRegions.length-2">,</template>
-            <template v-else-if="idx < selectedRegions.length-1"> и</template>
+                                                             type="hidden">{{ r.name }}<template v-if="idx < selectedRegions.length-2">, </template><template v-else-if="idx < selectedRegions.length-1"> и </template>
         </template>
         <button class="button nobutton" href="#" type="button" @click="modal_open=true">изменить</button>
         <teleport to="body">
             <operating-regions-modal v-if="modal_open" :region-list="regionList" :value="selection"
-                                     @close="modal_open=false"/>
+                                     @close="modal_open=false" @selected="selection=$event"/>
         </teleport>
     </wa-field>
 </template>

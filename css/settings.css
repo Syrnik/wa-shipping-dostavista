@@ -41,3 +41,13 @@
   display: block;
 }
 
+/*!***********************************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/vue-loader/dist/stylePostLoader.js!./node_modules/stylus-loader/dist/cjs.js!./node_modules/vue-loader/dist/index.js??ruleSet[1].rules[5].use[0]!./settings/CustomerInterval.vue?vue&type=style&index=0&id=52731b9e&lang=stylus ***!
+  \***********************************************************************************************************************************************************************************************************************************************************************************************/
+.w-shipping-dostavista__interval-control-table thead tr th {
+  width: 100%;
+}
+input.w-shipping-dostavista__hour-minute-input {
+  width: 2.5rem;
+}
+

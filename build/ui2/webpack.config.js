@@ -40,6 +40,11 @@ const config = {
                 use: [MiniCssExtractPlugin.loader, 'css-loader', 'stylus-loader']
             },
             {
+                test: /\.css?$/,
+                // exclude: /node_modules/,
+                use: [MiniCssExtractPlugin.loader, 'css-loader']
+            },
+            {
                 test: /\.js$/,
                 exclude: /node_modules/,
                 loader: 'babel-loader',

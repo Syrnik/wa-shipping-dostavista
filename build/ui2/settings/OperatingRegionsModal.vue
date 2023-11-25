@@ -2,7 +2,6 @@
 
 import WaDialog from "../components/waDialog.vue";
 import {ref, unref} from "vue";
-import {json} from "../../../../../../wa-content/js/d3/7.0.1/d3";
 
 const props = defineProps({value: {type: Array, default: () => []}, regionList: {type: Array, default: () => []}}),
     emit = defineEmits(['selected', 'close']),

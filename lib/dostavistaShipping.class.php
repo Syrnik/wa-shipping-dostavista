@@ -34,7 +34,6 @@ use Syrnik\WaShippingUtils;
  * @property-read array<string> $holidays
  * @property-read array<string> $workdays
  * @property-read array{type:string, value:string} $location_rule
- * @property-read bool $detailed_log
  * @property-read array{client:bool, receiver:string} $sms_notify
  * @property-read string $surcharge
  * @property-read ?float $free_delivery
@@ -155,9 +154,6 @@ class dostavistaShipping extends waShipping
                     break;
                 case 'exact_delivery_time':
                     $data = (int)$data;
-                    break;
-                case 'detailed_log':
-                    $data = (bool)$data;
                     break;
                 case 'free_delivery':
                     if (is_string($data)) {
@@ -621,7 +617,7 @@ class dostavistaShipping extends waShipping
                 $formula = str_replace(',', '.', $formula);
                 try {
                     $math = new EvalMath();
-                    $math->evaluate('w=' . WaShippingUtils::monetaryString((float)$this->getTotalRawPrice()));
+                    $math->evaluate('y=' . WaShippingUtils::monetaryString((float)$this->getTotalRawPrice()));
                     $math->evaluate('t=' . WaShippingUtils::monetaryString((float)$this->getTotalPrice()));
                     $value = $math->evaluate($formula);
                     if ($value === false) {

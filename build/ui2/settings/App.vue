@@ -12,6 +12,7 @@ import Insurance from "./Insurance.vue";
 import Surcharge from "./Surcharge.vue";
 import FreeDelivery from "./FreeDelivery.vue";
 import SmsNotifications from "./SmsNotifications.vue";
+import PluginHeader from "./PluginHeader.vue";
 
 const props = defineProps(['info', 'settings']);
 const setting = reactive(props.settings);
@@ -22,6 +23,7 @@ onMounted(() => document.getElementsByClassName('article')?.[0]?.classList.add('
 
 <template>
     <div class="fields">
+        <plugin-header />
         <div class="fields-group">
             <server-type v-model="setting.api_server"/>
             <token-api v-model.trim="setting.token"/>

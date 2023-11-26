@@ -2,6 +2,7 @@
 import WaRadio from "../components/wa-radio.vue";
 import {inject, ref} from "vue";
 import addns from "../components/addns";
+import FormulaDrawer from "./FormulaDrawer.vue";
 
 const props = defineProps({
     modelValue: {type: Object, default: () => ({type: "none", value: ""})}
@@ -26,8 +27,8 @@ const options = [
               :ns="addns('type',ns)">
         <template v-if="value.type==='custom'">
             <input type="text" class="long" :name="addns('value', ns)" v-model.trim="value.value"
-                   @input="$emit('update:modelValue',value)">
-            <a href=""><i class="far fa-question-circle"></i></a>
+                   @input="$emit('update:modelValue',value)" placeholder="0">
+            <formula-drawer :vars="['z', 'y']"><template #header>Формула расчёта страховой стоимости</template></formula-drawer>
         </template>
     </wa-radio>
 </template>

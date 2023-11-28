@@ -1,41 +1,22 @@
-<div id="{$plugin_id}-shipping-settings"></div>
-<style>
-    #shipping-{$plugin_id}-settings-app, #shipping-{$plugin_id}-settings-app .tabs-component, #shipping-{$plugin_id}-settings-app .tab-content {
-        box-sizing: border-box;
-    }
-    #shipping-{$plugin_id}-settings-app div.value.reloading {
-        position: absolute;
-        top: 0;
-        background: rgba(255,255,255,0.7) url('{$wa_static_url}wa-plugins/shipping/{$plugin_id}/img/ajax-loader.gif') left 10px top 10px no-repeat;
-        height: 100%;
-        width: 100%;
-    }
-    #shipping-{$plugin_id}-settings-app .sortable i.icon16.sort:hover { cursor: ns-resize }
-    #shipping-{$plugin_id}-settings-app .display-none { display: none }
-    #shipping-{$plugin_id}-settings-app .value .vdp-datepicker .cell.selected { background-color: transparent }
-    #shipping-{$plugin_id}-settings-app .holidays .value .vdp-datepicker .cell.highlighted { background-color: #cfc }
-    #shipping-{$plugin_id}-settings-app .holidays .value .vdp-datepicker .cell.selected.highlighted { background-color: #cfc }
-    #shipping-{$plugin_id}-settings-app .holidays .vue-dates-list > li { background-color: #cfc; border-color: lightgreen }
-    #shipping-{$plugin_id}-settings-app .workdays .value .vdp-datepicker .cell.highlighted { background-color: #fcc }
-    #shipping-{$plugin_id}-settings-app .workdays .value .vdp-datepicker .cell.selected.highlighted { background-color: #fcc }
-    #shipping-{$plugin_id}-settings-app .workdays .vue-dates-list > li { background-color: #fcc; border-color: rosybrown }
-</style>
-<script type="text/javascript">
-    $(function () {
-        $.when($.Deferred(function (defer) {
-            if(typeof {$plugin_js_object} != 'undefined') {
-                defer.resolve();
-                return;
+<div id="w-shipping-dostavista-settings"></div>
+<script>
+    (function () {
+        $.wa.loadSources([
+            {
+                id: "dostavista-shipping-settings-js",
+                type: "js",
+                uri: "{$wa_static_url}wa-plugins/shipping/dostavista/js/settings.js?v={$info.version}"
+            },
+            {
+                id: "dostavista-shipping-settings-css",
+                type: "css",
+                uri: "{$wa_static_url}wa-plugins/shipping/dostavista/css/settings.css?v={$info.version}"
             }
-            $.getScript('{$wa_static_url}wa-plugins/shipping/{$plugin_id}/js/settings.js').done(function () {
-                defer.resolve();
-            });
-        })).done(function () {
-            {$plugin_js_object}.run({
-                el: '#{$plugin_id}-shipping-settings',
-                info: {$info|json_encode},
-                settings: {$settings|json_encode}
-            });
-        });
-    })
+        ]).done(
+            () => ShippingDostavistaPluginSettings({
+                info: {$info|json_encode:256},
+                settings: {$settings|json_encode:256}
+            }).mount('#w-shipping-dostavista-settings')
+        );
+    })();
 </script>

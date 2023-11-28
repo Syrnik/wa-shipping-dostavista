@@ -6,7 +6,7 @@ let config = {
     entry: './settings.js',
     output: {
         path: __dirname,
-        filename: '../js/settings.js',
+        filename: '../js/settings-legacy.js',
         libraryTarget: 'var',
         library: 'ShippingDostavistaPluginSettings'
     },

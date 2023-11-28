@@ -1,0 +1,54 @@
+{
+    "packages": [
+        {
+            "name": "serger/eval-math",
+            "version": "2.0.2",
+            "version_normalized": "2.0.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SergeR/eval-math.git",
+                "reference": "a9eae61df21bd19f693f78261f40a705f0551232"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SergeR/eval-math/zipball/a9eae61df21bd19f693f78261f40a705f0551232",
+                "reference": "a9eae61df21bd19f693f78261f40a705f0551232",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^5.6 || ^7 || ^8.0"
+            },
+            "require-dev": {
+                "php-coveralls/php-coveralls": "^2",
+                "phpunit/phpunit": "^5"
+            },
+            "time": "2023-01-08T10:39:51+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.x-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "SergeR\\Util\\EvalMath\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "description": "EvalMath",
+            "keywords": [
+                "EvalMath"
+            ],
+            "support": {
+                "source": "https://github.com/SergeR/eval-math/tree/2.0.2"
+            },
+            "install-path": "../serger/eval-math"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

@@ -1,6 +1,7 @@
 <?php
 return array(
     'token'               => ['value' => ''],
+    'operating_region'    => ['value' => ['77', '50']],
     'location_from'       => ['value' => ['name' => '']],
     'api_server'          => ['value' => 'test'],
     'delivery_time'       => ['value' => ''],
@@ -22,11 +23,9 @@ return array(
     ]],
     'holidays'            => ['value' => []],
     'workdays'            => ['value' => []],
-    'cash_on_delivery'    => ['value' => false],
     'insurance'           => ['value' => ['type' => 'none', 'value' => '']],
     'surcharge'           => ['value' => ''],
     'free_delivery'       => ['value' => null],
-    'location_rule'       => ['value' => ['type' => 'except', 'value' => '']],
     'sms_notify'          => ['value' => ['client' => false, 'receiver' => 'no']],
     'detailed_log'        => ['value' => false]
 );

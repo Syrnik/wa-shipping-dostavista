@@ -8,6 +8,7 @@
                                autocomplete="please no"
                                :name="addns('token', info.namespace)"
                                v-model="token"></div></wa-field>
+                <operating-region :region-list="info.lists.regions" v-model="operating_regions" :ns="addns('operating_regions', info.namespace)" />
                 <location-from name="Адрес отправки"
                            :ns="addns('location_from', info.namespace)"
                            v-model="location_from"></location-from>
@@ -38,13 +39,6 @@
                        name="Дополнительные рабочие дни"
                        v-model="workdays"
                        :ns="addns('workdays', info.namespace)"></dates>
-                <wa-field name="Наложенный платёж">
-                    <div class="value no-shift">
-                        <input type="hidden" :name="addns('cash_on_delivery', info.namespace)" value="0">
-                        <label><input type="checkbox" :name="addns('cash_on_delivery', info.namespace)" v-model="cash_on_delivery" value="1"></label>
-                    </div>
-                    <div class="value"><span
-                            class="hint">Если включить, то для расчёта будет также передана стоимость заказа (без учёта доставки), которую нужно получить у клиента. Возможно, это окажет влияние на стоимость доставки.</span></div></wa-field>
                 <insurance field="insurance" v-model="insurance" :ns="info.namespace"></insurance>
                 <wa-field name="Корректировка стоимости доставки"><div
                         class="value no-shift"><input
@@ -53,7 +47,7 @@
                         :name="addns('surcharge', info.namespace)"
                         placeholder="S"
                         v-model.trim="surcharge"><br><span
-                        class="hint">Фиксированная стоимость или формула для наценки/скидки на расчётную стоимсть доставки. Можно оставить пустым, тогда будет использоваться стоимость, посчитанная через API. Доступные переменные: S — стоимость доставки, почитанная плагином, Z — стоимость заказа с учётом скидок, W — стоимость заказа без учёта скидок.</span></div></wa-field>
+                        class="hint">Фиксированная стоимость или формула для наценки/скидки на расчётную стоимость доставки. Можно оставить пустым, тогда будет использоваться стоимость, посчитанная через API. Доступные переменные: S — стоимость доставки, почитанная плагином, Z — стоимость заказа с учётом скидок, Y — стоимость заказа без учёта скидок.</span></div></wa-field>
                 <wa-field name="Порог бесплатной доставки">
                     <div class="value no-shift"><input
                             type="number"
@@ -63,16 +57,7 @@
                             min="0" step="0.01"
                             :name="addns('free_delivery', info.namespace)"><br><span
                             class="hint">Если сумма заказа больше либо равна указанной, то доставка в ПВЗ будет бесплатной. Оставьте поле пустым, если доставка всегда платная. Поставьте 0, если доставка всегда бесплатная.</span></div></wa-field>
-                <location-rule name="Ограничения по географии" field="location_rule" :ns="info.namespace" v-model="location_rule"></location-rule>
                 <sms-notifications :ns="addns('sms_notify', info.namespace)" v-model="sms_notify"></sms-notifications>
-                <wa-field name="Подробный лог">
-                    <input type="hidden" :name="addns('detailed_log', info.namespace)" value="0">
-                    <div class="value no-shift">
-                        <label><input type="checkbox" :name="addns('detailed_log', info.namespace)" v-model="detailed_log"
-                                      value="1"> &mdash; записывать подробный лог в режиме отладки</label><br><span
-                            class="hint"><b>При включенном в системе режиме отладки</b> будет записываться не просто процесс расчёта, но и подробности по отправленным запросам и полученным ответам.</span>
-                    </div>
-                </wa-field>
             </tab>
             <tab name="Информация">
                 <about-page :info="info"></about-page>
@@ -91,6 +76,7 @@
     import LocationRule from "../components/LocationRule.vue";
     import AboutPage from "../components/about/AboutPage.vue";
     import SmsNotifications from "../components/sms-notifications.vue"
+    import OperatingRegion from "../components/OperatingRegion.vue";
 
     export default {
         props: {
@@ -101,6 +87,8 @@
         data() {
             return this.settings
         },
-        components: {LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule, AboutPage, SmsNotifications}
+        components: {
+            OperatingRegion,
+            LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule, AboutPage, SmsNotifications}
     }
 </script>

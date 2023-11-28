@@ -5,10 +5,8 @@
             <label><input type="checkbox" :name="addns('client', ns)" value="1" v-model="value.client"> &mdash; отправлять в магазин SMS о статусе заказа</label>
         </div>
         <div class="value">
-            <h4>SMS получателю с интервалом прибытия и телефоном курьера</h4>
-            <div><label><input type="radio" value="no" v-model="value.receiver" :name="addns('receiver', ns)"> &mdash; не отправлять</label></div>
-            <div><label><input type="radio" value="yes" v-model="value.receiver" :name="addns('receiver', ns)"> &mdash; отправлять</label></div>
-            <span class="hint">Если выбран вариант «спросить у покупателя…», то на этапе выбра доставки покупателю будет показан чекбокс и он сможет выбрать сам нужно ли ему получать SMS. Опция влияет на стоимость доставки, но в пошаговом режиме оформления заказа может работать некорректно (не вызывать пересчёт).</span>
+            <input type="hidden" :name="addns('receiver', ns)" value="no">
+            <label><input type="checkbox" :name="addns('receiver', ns)" value="yes" v-model="value.receiver"> &mdash; отправлять получателю SMS с интервалом прибытия и телефоном курьера</label>
         </div>
     </wa-field>
 </template>

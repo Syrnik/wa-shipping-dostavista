@@ -7,10 +7,6 @@ namespace Composer\Autoload;
 class ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c
 {
     public static $prefixLengthsPsr4 = array (
-        'W' => 
-        array (
-            'Webit\\Util\\EvalMath\\' => 20,
-        ),
         'S' => 
         array (
             'Syrnik\\' => 7,
@@ -25,10 +21,6 @@ class ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c
     );
 
     public static $prefixDirsPsr4 = array (
-        'Webit\\Util\\EvalMath\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/webit/eval-math/src',
-        ),
         'Syrnik\\' => 
         array (
             0 => __DIR__ . '/..' . '/syrnik/wa-shipping-utils/src',

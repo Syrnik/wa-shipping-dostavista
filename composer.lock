@@ -114,16 +114,16 @@
         },
         {
             "name": "serger/eval-math",
-            "version": "2.0.2",
+            "version": "v2.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/SergeR/eval-math.git",
-                "reference": "a9eae61df21bd19f693f78261f40a705f0551232"
+                "reference": "ce8d7503de4cbff339be33d5bb8bd6f589988b39"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/SergeR/eval-math/zipball/a9eae61df21bd19f693f78261f40a705f0551232",
-                "reference": "a9eae61df21bd19f693f78261f40a705f0551232",
+                "url": "https://api.github.com/repos/SergeR/eval-math/zipball/ce8d7503de4cbff339be33d5bb8bd6f589988b39",
+                "reference": "ce8d7503de4cbff339be33d5bb8bd6f589988b39",
                 "shasum": ""
             },
             "require": {
@@ -153,9 +153,9 @@
                 "EvalMath"
             ],
             "support": {
-                "source": "https://github.com/SergeR/eval-math/tree/2.0.2"
+                "source": "https://github.com/SergeR/eval-math/tree/v2.0.3"
             },
-            "time": "2023-01-08T10:39:51+00:00"
+            "time": "2023-11-29T12:41:49+00:00"
         },
         {
             "name": "serger/process-logger",

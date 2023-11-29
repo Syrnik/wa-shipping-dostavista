@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'syrnik/shipping-dostavist',
-        'pretty_version' => 'dev-develop',
-        'version' => 'dev-develop',
-        'reference' => 'a15f9b681b03e8912c3f5d318a2fba5e932a26c8',
+        'pretty_version' => '1.0.0+no-version-set',
+        'version' => '1.0.0.0',
+        'reference' => NULL,
         'type' => 'library',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
@@ -29,9 +29,9 @@
             'dev_requirement' => false,
         ),
         'serger/eval-math' => array(
-            'pretty_version' => '2.0.2',
-            'version' => '2.0.2.0',
-            'reference' => 'a9eae61df21bd19f693f78261f40a705f0551232',
+            'pretty_version' => 'v2.0.3',
+            'version' => '2.0.3.0',
+            'reference' => 'ce8d7503de4cbff339be33d5bb8bd6f589988b39',
             'type' => 'library',
             'install_path' => __DIR__ . '/../serger/eval-math',
             'aliases' => array(),
@@ -47,9 +47,9 @@
             'dev_requirement' => false,
         ),
         'syrnik/shipping-dostavist' => array(
-            'pretty_version' => 'dev-develop',
-            'version' => 'dev-develop',
-            'reference' => 'a15f9b681b03e8912c3f5d318a2fba5e932a26c8',
+            'pretty_version' => '1.0.0+no-version-set',
+            'version' => '1.0.0.0',
+            'reference' => NULL,
             'type' => 'library',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),

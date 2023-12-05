@@ -43,5 +43,7 @@ return array(
     '*/.phpstorm.meta.php',
     '.travis.yml',
     '*/.travis.yml',
-    'psalm.xml'
+    'psalm.xml',
+    '.editorconfig',
+    '*/.editorconfig'
 );

@@ -162,7 +162,7 @@ class dostavistaShipping extends waShipping
                     }
                     break;
                 case 'surcharge':
-                    $data = trim($data);
+                    $data = trim((string)$data);
                     break;
                 case 'sms_notify':
                     $data = (array)$data;
@@ -449,14 +449,16 @@ class dostavistaShipping extends waShipping
             ]
         ];
 
-        $result[self::VARIANT_ID]['rate'] = WaShippingUtils::calcTotalCost(
-            $rate,
-            (float)$this->getTotalPrice(),
-            (float)$this->getTotalRawPrice(),
-            $this->surcharge,
-            'formula',
-            (string)$this->free_delivery
-        );
+        $result[self::VARIANT_ID]['rate'] = empty($this->surcharge)
+            ? $rate
+            : WaShippingUtils::calcTotalCost(
+                $rate,
+                (float)$this->getTotalPrice(),
+                (float)$this->getTotalRawPrice(),
+                $this->surcharge ?: '0',
+                'formula',
+                (string)$this->free_delivery
+            );
 
         if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
             $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);

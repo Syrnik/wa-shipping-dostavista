@@ -8,7 +8,8 @@
 $dir = wa()->getConfig()->getPath('plugins') . '/shipping/dostavista/';
 
 $files = [
-    'lib/vendors/syrnik/wa-sipping-utils/lib'
+    'lib/vendors/syrnik/wa-sipping-utils/lib',
+    'lib/vendors/syrnik/wa-sipping-utils/composer.lock',
 ];
 
 foreach ($files as $file) {

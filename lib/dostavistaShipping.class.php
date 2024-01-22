@@ -455,7 +455,7 @@ class dostavistaShipping extends waShipping
                 $rate,
                 (float)$this->getTotalPrice(),
                 (float)$this->getTotalRawPrice(),
-                $this->surcharge ?: '0',
+                $this->surcharge ?: '',
                 'formula',
                 (string)$this->free_delivery
             );

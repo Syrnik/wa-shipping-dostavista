@@ -309,7 +309,10 @@ class WaShippingUtils
 
         if ($handling_base == 'formula') {
             $EvalMath = new EvalMath;
-            $handling_cost = strtolower($handling_cost);
+            $handling_cost = trim(strtolower($handling_cost));
+            if (!strlen($handling_cost)) {
+                return $carrier_cost;
+            }
 
             try {
                 $EvalMath->evaluate('z=' . str_replace(',', '.', (string)$total_price));

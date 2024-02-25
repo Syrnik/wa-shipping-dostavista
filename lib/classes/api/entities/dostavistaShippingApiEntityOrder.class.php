@@ -30,7 +30,7 @@ class dostavistaShippingApiEntityOrder implements JsonSerializable
     /**
      * @inheritDoc
      */
-    public function jsonSerialize():array
+    public function jsonSerialize(): array
     {
         $data = [
             'type'                                   => $this->getType(),

@@ -1,10 +1,14 @@
 <?php
 /**
  * @author Serge Rodovnichenko <serge@syrnik.com>
- * @copyright (c) 2019, Serge Rodovnichenko
+ * @copyright (c) 2019-2024, Serge Rodovnichenko
  * @license http://www.webasyst.com/terms/#eula Webasyst
  */
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use Psr\Log\NullLogger;
+use SergeR\ProcessLogger;
 use SergeR\Util\EvalMath\EvalMath;
 use SergeR\Util\EvalMath\Exception\EvalMathException;
 use Syrnik\WaShippingUtils;
@@ -46,6 +50,8 @@ class dostavistaShipping extends waShipping
     protected ?array $_schedule = null;
 
     protected dostavistaShippingCache $cache;
+
+    protected LoggerInterface $logger;
 
     /**
      * @return string
@@ -664,6 +670,7 @@ class dostavistaShipping extends waShipping
     {
         require_once 'vendors/autoload.php';
         parent::init();
+        $this->logger = new ProcessLogger(waSystemConfig::isDebug() ? LogLevel::DEBUG : LogLevel::ERROR);
     }
 
     /**
@@ -689,5 +696,25 @@ class dostavistaShipping extends waShipping
         if (!$cache) $cache = new waCache(new waFileCacheAdapter([]), 'webasyst');
 
         return new dostavistaShippingCache($cache);
+    }
+
+    public function __destruct()
+    {
+        if (
+            isset($this->logger) &&
+            ($this->logger instanceof ProcessLogger) &&
+            ($log = $this->logger->flush())
+        ) {
+            self::log($this->id, $log);
+        }
+    }
+
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger()
+    {
+        if (isset($this->logger)) return $this->logger;
+        return $this->logger = new NullLogger();
     }
 }

@@ -56,9 +56,9 @@
             'dev_requirement' => false,
         ),
         'syrnik/wa-shipping-utils' => array(
-            'pretty_version' => '2.0.1',
-            'version' => '2.0.1.0',
-            'reference' => '700532e6cf208c673129e29bd10648e822ed8b27',
+            'pretty_version' => '2.0.2',
+            'version' => '2.0.2.0',
+            'reference' => '80da76cb0f8cdc4582f6be3a5230f352286116d4',
             'type' => 'library',
             'install_path' => __DIR__ . '/../syrnik/wa-shipping-utils',
             'aliases' => array(),

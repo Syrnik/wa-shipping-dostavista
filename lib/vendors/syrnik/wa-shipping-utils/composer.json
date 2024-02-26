@@ -21,16 +21,12 @@
       "Syrnik\\": "src/"
     }
   },
-  "config": {
-    "vendor-dir": "lib/vendors",
-    "platform": {
-      "php": "7.4.0"
-    },
-    "secure-http": false
-  },
   "require": {
-    "php": ">=7.4",
+    "php": ">=7.2",
     "serger/eval-math": "^2",
     "ext-mbstring": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^8"
   }
 }

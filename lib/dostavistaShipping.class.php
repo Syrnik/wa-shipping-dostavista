@@ -1,10 +1,14 @@
 <?php
 /**
  * @author Serge Rodovnichenko <serge@syrnik.com>
- * @copyright (c) 2019, Serge Rodovnichenko
+ * @copyright (c) 2019-2024, Serge Rodovnichenko
  * @license http://www.webasyst.com/terms/#eula Webasyst
  */
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
+use Psr\Log\NullLogger;
+use SergeR\ProcessLogger;
 use SergeR\Util\EvalMath\EvalMath;
 use SergeR\Util\EvalMath\Exception\EvalMathException;
 use Syrnik\WaShippingUtils;
@@ -46,6 +50,8 @@ class dostavistaShipping extends waShipping
     protected ?array $_schedule = null;
 
     protected dostavistaShippingCache $cache;
+
+    protected LoggerInterface $logger;
 
     /**
      * @return string
@@ -162,7 +168,7 @@ class dostavistaShipping extends waShipping
                     }
                     break;
                 case 'surcharge':
-                    $data = trim($data);
+                    $data = trim((string)$data);
                     break;
                 case 'sms_notify':
                     $data = (array)$data;
@@ -430,15 +436,26 @@ class dostavistaShipping extends waShipping
      */
     protected function calculate()
     {
+        $this->getLogger()->info('Начат расчёт доставки');
+
         $calculation_order = $this->createDostavistaOrder();
         if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
+            $this->getLogger()->info('Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API');
+            $this->getLogger()->debug("Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT));
+            $t = microtime(true);
             $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
                 ->CalculateOrder($calculation_order);
+            $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true)-$t, 3) .' с.');
+            $this->getLogger()->debug("Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE));
             $this->getCache()->saveCalculation($response, $calculation_order, $this->token, 'test' === $this->api_server);
+        } else {
+            $this->getLogger()->info('Результат расчёта извлечён из кэша');
         }
 
-        if ($error = $this->getError($response))
+        if ($error = $this->getError($response)) {
+            $this->getLogger()->info("Ошибка: '$error'");
             return [['rate' => null, 'comment' => $error]];
+        }
 
 
         $rate = (float)$response['order']['payment_amount'];
@@ -449,24 +466,26 @@ class dostavistaShipping extends waShipping
             ]
         ];
 
-        $result[self::VARIANT_ID]['rate'] = WaShippingUtils::calcTotalCost(
-            $rate,
-            (float)$this->getTotalPrice(),
-            (float)$this->getTotalRawPrice(),
-            $this->surcharge,
-            'formula',
-            (string)$this->free_delivery
-        );
+        $result[self::VARIANT_ID]['rate'] = empty($this->surcharge)
+            ? $rate
+            : WaShippingUtils::calcTotalCost(
+                $rate,
+                (float)$this->getTotalPrice(),
+                (float)$this->getTotalRawPrice(),
+                $this->surcharge ?: '',
+                'formula',
+                (string)$this->free_delivery
+            );
 
         if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
             $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
             $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
         }
 
-
         try {
             $delivery_times = $this->getDeliveryTimes();
         } catch (waException $e) {
+            $this->getLogger()->error($e->getMessage());
             return 'Ошибка расчёта';
         }
         $result[self::VARIANT_ID]['est_delivery'] = $delivery_times['estimate'];
@@ -518,6 +537,8 @@ class dostavistaShipping extends waShipping
             $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR] =
                 ($result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR] ?? []) + $custom_data;
         }
+
+        $this->getLogger()->info('Расчёт доставки выполнен');
 
         return $result;
     }
@@ -646,7 +667,7 @@ class dostavistaShipping extends waShipping
 
         $destination_point = (new dostavistaShippingApiEntityPoint)
             ->setAddress($this->stringifyAddress())
-            ->setContactPerson(new dostavistaShippingApiEntityContactPerson('Отправитель', '79999999999'));
+            ->setContactPerson(new dostavistaShippingApiEntityContactPerson('Получатель', '79999999999'));
 
         $order->setInsuranceAmount($this->getInsuranceAppraisedValue());
 
@@ -655,6 +676,12 @@ class dostavistaShipping extends waShipping
 
         $order->setPoints($start_point, $destination_point);
 
+        $this->getLogger()->info("Вес отправления: {$order->getTotalWeight()} кг.");
+        $this->getLogger()->info("Отправление от: '{$start_point->getAddress()}'");
+        $this->getLogger()->info("Доставка до: '{$destination_point->getAddress()}'");
+        $this->getLogger()->info("Стоимость для расчёта страховки: {$order->getInsuranceAmount()}₽");
+        $this->getLogger()->info("Наложенный платёж: " . $this->isCashOnDeliverySelected() ? $destination_point->getTakingAmount() . '₽' : 'нет');
+
         return $order;
     }
 
@@ -662,6 +689,7 @@ class dostavistaShipping extends waShipping
     {
         require_once 'vendors/autoload.php';
         parent::init();
+        $this->logger = new ProcessLogger(waSystemConfig::isDebug() ? LogLevel::DEBUG : LogLevel::ERROR);
     }
 
     /**
@@ -687,5 +715,25 @@ class dostavistaShipping extends waShipping
         if (!$cache) $cache = new waCache(new waFileCacheAdapter([]), 'webasyst');
 
         return new dostavistaShippingCache($cache);
+    }
+
+    public function __destruct()
+    {
+        if (
+            isset($this->logger) &&
+            ($this->logger instanceof ProcessLogger) &&
+            ($log = $this->logger->flush())
+        ) {
+            self::log($this->id, $log);
+        }
+    }
+
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger()
+    {
+        if (isset($this->logger)) return $this->logger;
+        return $this->logger = new NullLogger();
     }
 }

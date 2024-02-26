@@ -3,8 +3,8 @@
   "description": "Dostavista shipping plugin (non-official, 3rd party) interface for Webasyst",
   "license": "UNLICENSED",
   "scripts": {
-    "dostavista-shipping-settings-legacy-dev": "node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode development --display-error-details --watch",
-    "dostavista-shipping-settings-legacy-prod": "node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode production --display-error-details"
+    "dostavista-shipping-settings-legacy-dev": "set NODE_OPTIONS=--openssl-legacy-provider && node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode development --display-error-details --watch",
+    "dostavista-shipping-settings-legacy-prod": "set NODE_OPTIONS=--openssl-legacy-provider && node ./node_modules/webpack/bin/webpack --config webpack.settings.config.js --mode production --display-error-details"
   },
   "dependencies": {
     "dateformat": "^3.0.3",

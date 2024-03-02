@@ -40,11 +40,20 @@ class dostavistaShippingCache
     {
         if (!$parts) throw new waException('Невозможно сгенерировать ключ кэша для пустого списка параметров');
         array_walk($parts, function (&$part): void {
-            if (is_scalar($part)) $part = (string)$part;
-            if ($part instanceof JsonSerializable) $part = waUtils::jsonEncode($part, JSON_UNESCAPED_UNICODE);
-            if (is_object($part) && method_exists($part, '__toString')) $part = (string)$part;
-            if (is_array($part)) $part = waUtils::jsonEncode($part, JSON_UNESCAPED_UNICODE);
-            $part = '';
+            if (is_scalar($part)) {
+                $part = (string)$part;
+            }
+            elseif ($part instanceof JsonSerializable) {
+                $part = waUtils::jsonEncode($part, JSON_UNESCAPED_UNICODE);
+            }
+            elseif (is_object($part) && method_exists($part, '__toString')) {
+                $part = (string)$part;
+            }
+            elseif (is_array($part)) {
+                $part = waUtils::jsonEncode($part, JSON_UNESCAPED_UNICODE);
+            } else {
+                $part = '';
+            }
         });
 
         return md5(implode(':', $parts));

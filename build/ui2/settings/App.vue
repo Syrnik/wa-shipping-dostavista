@@ -27,7 +27,7 @@ onMounted(() => document.getElementsByClassName('article')?.[0]?.classList.add('
         <div class="fields-group">
             <server-type v-model="setting.api_server"/>
             <token-api v-model.trim="setting.token"/>
-            <operating-region v-model="setting.operating_regions" :region-list="info.lists.regions"/>
+            <operating-region v-model="setting.operating_region" :region-list="info.lists.regions"/>
             <location-from v-model="setting.location_from.name"/>
         </div>
         <div class="fields-group">

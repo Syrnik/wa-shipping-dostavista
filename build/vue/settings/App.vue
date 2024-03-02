@@ -8,7 +8,7 @@
                                autocomplete="please no"
                                :name="addns('token', info.namespace)"
                                v-model="token"></div></wa-field>
-                <operating-region :region-list="info.lists.regions" v-model="operating_regions" :ns="addns('operating_regions', info.namespace)" />
+                <operating-region :region-list="info.lists.regions" v-model="operating_region" :ns="addns('operating_region', info.namespace)" />
                 <location-from name="Адрес отправки"
                            :ns="addns('location_from', info.namespace)"
                            v-model="location_from"></location-from>

@@ -9,7 +9,7 @@ const props = defineProps({
     regionList: {type: Array, default: () => []}
 });
 const selection = ref(props.modelValue),
-    ns = addns('operating_regions', inject('namespace'));
+    ns = addns('operating_region', inject('namespace'));
 let dialog_html,
     model_selection = ref([]), modal_open = ref(false);
 

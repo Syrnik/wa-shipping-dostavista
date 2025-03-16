@@ -679,8 +679,9 @@ class dostavistaShipping extends waShipping
 
         $order->setInsuranceAmount($this->getInsuranceAppraisedValue());
 
-        if ($this->isCashOnDeliverySelected())
+        if ($this->isCashOnDeliverySelected()) {
             $destination_point->setTakingAmount(new dostavistaShippingApiEntityMoney((float)$this->getTotalPrice()));
+        }
 
         $order->setPoints($start_point, $destination_point);
 

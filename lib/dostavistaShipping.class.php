@@ -444,27 +444,8 @@ class dostavistaShipping extends waShipping
     {
         $this->getLogger()->info('Начат расчёт доставки');
 
-        $calculation_order = $this->createDostavistaOrder();
-        if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
-            $this->getLogger()->info('Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API');
-            $this->getLogger()->debug("Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-            $t = microtime(true);
-            $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
-                ->CalculateOrder($calculation_order);
-            $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true) - $t, 3) . ' с.');
-            $this->getLogger()->debug("Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-            $this->getCache()->saveCalculation($response, $calculation_order, $this->token, 'test' === $this->api_server);
-        } else {
-            $this->getLogger()->info('Результат расчёта извлечён из кэша');
-        }
+        $address_street = trim((string)$this->getAddress('street'));
 
-        if ($error = $this->getError($response)) {
-            $this->getLogger()->info("Ошибка: '$error'");
-            return [['rate' => null, 'comment' => $error]];
-        }
-
-
-        $rate = (float)$response['order']['payment_amount'];
         $result = [
             self::VARIANT_ID => [
                 'currency' => 'RUB',
@@ -472,20 +453,46 @@ class dostavistaShipping extends waShipping
             ]
         ];
 
-        $result[self::VARIANT_ID]['rate'] = empty($this->surcharge)
-            ? $rate
-            : WaShippingUtils::calcTotalCost(
-                $rate,
-                (float)$this->getTotalPrice(),
-                (float)$this->getTotalRawPrice(),
-                $this->surcharge ?: '',
-                'formula',
-                (string)$this->free_delivery
-            );
+        if($address_street) {
+            $calculation_order = $this->createDostavistaOrder();
+            if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
+                $this->getLogger()->info('Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API');
+                $this->getLogger()->debug("Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                $t = microtime(true);
+                $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
+                    ->CalculateOrder($calculation_order);
+                $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true) - $t, 3) . ' с.');
+                $this->getLogger()->debug("Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                $this->getCache()->saveCalculation($response, $calculation_order, $this->token, 'test' === $this->api_server);
+            } else {
+                $this->getLogger()->info('Результат расчёта извлечён из кэша');
+            }
 
-        if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
-            $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
-            $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
+            if ($error = $this->getError($response)) {
+                $this->getLogger()->info("Ошибка: '$error'");
+                return [['rate' => null, 'comment' => $error]];
+            }
+
+
+            $rate = (float)$response['order']['payment_amount'];
+
+            $result[self::VARIANT_ID]['rate'] = empty($this->surcharge)
+                ? $rate
+                : WaShippingUtils::calcTotalCost(
+                    $rate,
+                    (float)$this->getTotalPrice(),
+                    (float)$this->getTotalRawPrice(),
+                    $this->surcharge ?: '',
+                    'formula',
+                    (string)$this->free_delivery
+                );
+
+            if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
+                $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
+                $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
+            }
+        } else {
+            $result[self::VARIANT_ID]['rate'] = null;
         }
 
         try {

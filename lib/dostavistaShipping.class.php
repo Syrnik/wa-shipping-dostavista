@@ -298,40 +298,46 @@ class dostavistaShipping extends waShipping
      */
     protected function getDeliveryTimes(): array
     {
-        if (!$this->delivery_time) {
+        $this->getLogger()->info('Начато вычисление срока доставки');
+
+        $this->getLogger()->info("Настройка времени доставки: $this->delivery_time");
+        if (empty($this->delivery_time)) {
+            $this->getLogger()->info('Настройка времени доставки не задана, ничего не показываем');
             return ['timestamp' => null, 'estimate' => null];
         }
 
         /** @var string $departure_datetime SQL DATETIME */
         $departure_datetime = $this->getPackageProperty('departure_datetime');
+        $this->getLogger()->info("ShopScript передал время отправки заказа: '$departure_datetime'");
 
-        $departure_timestamp = $departure_datetime ? max(0, strtotime($departure_datetime) - $this->getSchedule()['time']) : 0;
+        /** @var int $time_to_go Сколько времени до готовности */
+        $time_to_go = $departure_datetime ? max(0, strtotime($departure_datetime) - $this->getSchedule()['time']) : 0;
 
         if ('exact_delivery_time' === $this->delivery_time) {
-            $delivery_date = [
-                $this->getSchedule()['time'] + max(0, $this->exact_delivery_time) * 3600 + $departure_timestamp,
+            // Прибавить точное количество часов
+            $delivery_timestamps = [
+                $this->getSchedule()['time'] + max(0, $this->exact_delivery_time) * 3600 + $time_to_go,
             ];
         } else {
-            $delivery_date = array_map('strtotime', explode(',', $this->delivery_time, 2));
-            foreach ($delivery_date as & $date) {
-                $date += $departure_timestamp;
-            }
-            unset($date);
-            $delivery_date = array_unique($delivery_date);
+            // Или прибавить настройку типа "+1 day,+2 days" и получить массив меток времени
+            $delivery_timestamps = array_map('strtotime', explode(',', $this->delivery_time, 2));
+            array_walk($delivery_timestamps, fn(&$v) => $v += $time_to_go);
+            $delivery_timestamps = array_unique($delivery_timestamps);
         }
 
-        $est_delivery = array();
-        foreach ($delivery_date as $date) {
-            $est_delivery[] = waDateTime::format('humandate', $date);
+        // est_delivery — для старого оформления строка "12 марта - 13 марта"
+        $est_delivery = [];
+        foreach ($delivery_timestamps as $delivery_timestamp) {
+            $est_delivery[] = waDateTime::format('humandate', $delivery_timestamp);
         }
         $est_delivery = implode(' — ', $est_delivery);
 
-        if (count($delivery_date) == 1) {
-            $delivery_date = reset($delivery_date);
+        if (count($delivery_timestamps) === 1) {
+            $delivery_timestamps = reset($delivery_timestamps);
         }
 
         return array(
-            'timestamp' => $delivery_date,
+            'timestamp' => $delivery_timestamps, // Набор меток времени для показа в поле выбора интервала и формирования даты доставки в оформлении в корзине
             'estimate'  => $est_delivery,
         );
     }
@@ -441,12 +447,12 @@ class dostavistaShipping extends waShipping
         $calculation_order = $this->createDostavistaOrder();
         if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
             $this->getLogger()->info('Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API');
-            $this->getLogger()->debug("Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT));
+            $this->getLogger()->debug("Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
             $t = microtime(true);
             $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
                 ->CalculateOrder($calculation_order);
-            $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true)-$t, 3) .' с.');
-            $this->getLogger()->debug("Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE));
+            $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true) - $t, 3) . ' с.');
+            $this->getLogger()->debug("Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $this->getCache()->saveCalculation($response, $calculation_order, $this->token, 'test' === $this->api_server);
         } else {
             $this->getLogger()->info('Результат расчёта извлечён из кэша');
@@ -505,28 +511,30 @@ class dostavistaShipping extends waShipping
             foreach ($setting['intervals'] as $interval) {
                 $interval = $this->getInterval($interval, $delivery_times['timestamp']);
 
-                if (!empty($interval['start_date'])) {
+                if ($interval['start_date']) {
                     $key = $interval['interval'];
                     $intervals[$key] = array_keys($interval['day']);
                     $intervals[$key]['offset'] = $interval['offset'];
-                    if (!isset($result[self::VARIANT_ID]['delivery_date'])
-                        || (strtotime($result[self::VARIANT_ID]['delivery_date']) > strtotime($interval['start_date']))
+                    if (empty($result[self::VARIANT_ID]['delivery_date'])
+                        || strtotime($result[self::VARIANT_ID]['delivery_date']) > strtotime($interval['start_date'])
                     ) {
                         $delivery['delivery_date'] = $interval['start_date'];
                     }
 
-                    if ((null === $offset) || ($offset > $interval['offset'])) {
+                    if (null === $offset || $offset > $interval['offset']) {
                         $offset = $interval['offset'];
                     }
                 }
             }
 
             try {
-                if ($delivery ?? false)
+                if ($delivery ?? false) {
                     $placeholder = waDateTime::format($date_format, $delivery['delivery_date']);
+                }
             } catch (waException $e) {
 
             }
+
             $custom_data = array(
                 'offset'      => $offset,
                 'intervals'   => $intervals,

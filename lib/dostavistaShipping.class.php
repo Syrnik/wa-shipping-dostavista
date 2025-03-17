@@ -43,6 +43,7 @@ use Syrnik\WaShippingUtils;
  * @property-read string $surcharge
  * @property-read ?float $free_delivery
  * @property-read array{min:float|null, max:float|null} $weight_limits
+ * @property-read int|null $transport_type
  */
 class dostavistaShipping extends waShipping
 {
@@ -716,6 +717,10 @@ class dostavistaShipping extends waShipping
 
         if ($this->isCashOnDeliverySelected()) {
             $destination_point->setTakingAmount(new dostavistaShippingApiEntityMoney((float)$this->getTotalPrice()));
+        }
+
+        if ($this->transport_type) {
+            $order->setVehicleType(new dostavistaShippingApiEntityEnumVehicleType($this->transport_type));
         }
 
         $order->setPoints($start_point, $destination_point);

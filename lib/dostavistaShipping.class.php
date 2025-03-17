@@ -9,6 +9,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use SergeR\ProcessLogger;
+use SergeR\Typecaster\Typecast;
 use SergeR\Util\EvalMath\EvalMath;
 use SergeR\Util\EvalMath\Exception\EvalMathException;
 use Syrnik\WaShippingUtils;
@@ -173,11 +174,24 @@ class dostavistaShipping extends waShipping
                 case 'sms_notify':
                     $data = (array)$data;
                     $client = (bool)ifset($data, 'client', false);
-                    $receiver = (string)ifset($data, 'receiver', 'no');
+                    $receiver = (string)($data['receiver'] ?? 'no');
                     if (!in_array($receiver, ['no', 'yes', 'ask_no', 'ask_yes'])) {
                         $receiver = 'no';
                     }
                     $data = ['client' => $client, 'receiver' => $receiver];
+                    break;
+                case 'transport_type':
+                    $data = empty($data) ? 0 : (int)$data;
+                    break;
+                case 'weight_limits':
+                    if (!is_array($data)) {
+                        $data = ['min' => null, 'max' => null];
+                    } else {
+                        foreach ($data as &$datum) {
+                            $datum = Typecast::floatval($datum, 3, 0, null, true);
+                        }
+                        unset($datum);
+                    }
                     break;
             }
             $settings[$key] = $data;

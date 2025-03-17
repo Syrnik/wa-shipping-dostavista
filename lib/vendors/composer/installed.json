@@ -207,6 +207,53 @@
             "install-path": "../serger/process-logger"
         },
         {
+            "name": "serger/typecaster",
+            "version": "v1.0.1",
+            "version_normalized": "1.0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SergeR/typecaster.git",
+                "reference": "b956afa16ec29fa6a86ad9cf38ab165f75ba66bc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SergeR/typecaster/zipball/b956afa16ec29fa6a86ad9cf38ab165f75ba66bc",
+                "reference": "b956afa16ec29fa6a86ad9cf38ab165f75ba66bc",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "php": ">=7.2"
+            },
+            "time": "2023-04-21T08:00:26+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "SergeR\\Typecaster\\": "src"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Serge Rodovnichenko",
+                    "email": "serge@syrnik.com"
+                }
+            ],
+            "description": "Simple typecasting with no external dependencies",
+            "keywords": [
+                "typecast",
+                "typecasting"
+            ],
+            "support": {
+                "source": "https://github.com/SergeR/typecaster/tree/master",
+                "issues": "https://github.com/SergeR/typecaster/issues"
+            },
+            "install-path": "../serger/typecaster"
+        },
+        {
             "name": "syrnik/wa-shipping-utils",
             "version": "2.0.2",
             "version_normalized": "2.0.2.0",

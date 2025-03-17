@@ -46,6 +46,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'serger/typecaster' => array(
+            'pretty_version' => 'v1.0.1',
+            'version' => '1.0.1.0',
+            'reference' => 'b956afa16ec29fa6a86ad9cf38ab165f75ba66bc',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../serger/typecaster',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'syrnik/shipping-dostavist' => array(
             'pretty_version' => '1.0.0+no-version-set',
             'version' => '1.0.0.0',

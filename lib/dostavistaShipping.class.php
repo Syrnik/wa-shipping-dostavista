@@ -327,18 +327,23 @@ class dostavistaShipping extends waShipping
 
         // est_delivery — для старого оформления строка "12 марта - 13 марта"
         $est_delivery = [];
+        // delivery_date — даты для оформления в корзине
+        $delivery_date = [];
         foreach ($delivery_timestamps as $delivery_timestamp) {
             $est_delivery[] = waDateTime::format('humandate', $delivery_timestamp);
+            $delivery_date[] = date('Y-m-d H:i:s', $delivery_timestamp);
         }
         $est_delivery = implode(' — ', $est_delivery);
 
         if (count($delivery_timestamps) === 1) {
             $delivery_timestamps = reset($delivery_timestamps);
+            $delivery_date = reset($delivery_date);
         }
 
         return array(
-            'timestamp' => $delivery_timestamps, // Набор меток времени для показа в поле выбора интервала и формирования даты доставки в оформлении в корзине
-            'estimate'  => $est_delivery,
+            'timestamp'     => $delivery_timestamps, // Набор меток времени для показа в поле выбора интервала и формирования даты доставки в оформлении в корзине
+            'estimate'      => $est_delivery,
+            'delivery_date' => $delivery_date
         );
     }
 
@@ -453,7 +458,7 @@ class dostavistaShipping extends waShipping
             ]
         ];
 
-        if($address_street) {
+        if ($address_street) {
             $calculation_order = $this->createDostavistaOrder();
             if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
                 $this->getLogger()->info('Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API');
@@ -502,6 +507,8 @@ class dostavistaShipping extends waShipping
             return 'Ошибка расчёта';
         }
         $result[self::VARIANT_ID]['est_delivery'] = $delivery_times['estimate'];
+        $result[self::VARIANT_ID]['delivery_date'] = $delivery_times['delivery_date'];
+
 
         $setting = $this->customer_interval;
         if (!empty($setting['intervals'])) {
@@ -522,10 +529,13 @@ class dostavistaShipping extends waShipping
                     $key = $interval['interval'];
                     $intervals[$key] = array_keys($interval['day']);
                     $intervals[$key]['offset'] = $interval['offset'];
-                    if (empty($result[self::VARIANT_ID]['delivery_date'])
-                        || strtotime($result[self::VARIANT_ID]['delivery_date']) > strtotime($interval['start_date'])
-                    ) {
+                    if (empty($result[self::VARIANT_ID]['delivery_date'])) {
                         $delivery['delivery_date'] = $interval['start_date'];
+                    } else {
+                        $delivery_date = is_array($result[self::VARIANT_ID]['delivery_date']) ? min($result[self::VARIANT_ID]['delivery_date']) : $result[self::VARIANT_ID]['delivery_date'];
+                        if (strtotime($delivery_date) > strtotime($interval['start_date'])) {
+                            $delivery['delivery_date'] = $interval['start_date'];
+                        }
                     }
 
                     if (null === $offset || $offset > $interval['offset']) {

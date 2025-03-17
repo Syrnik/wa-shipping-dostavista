@@ -42,6 +42,7 @@ use Syrnik\WaShippingUtils;
  * @property-read array{client:bool, receiver:string} $sms_notify
  * @property-read string $surcharge
  * @property-read ?float $free_delivery
+ * @property-read array{min:float|null, max:float|null} $weight_limits
  */
 class dostavistaShipping extends waShipping
 {
@@ -462,6 +463,9 @@ class dostavistaShipping extends waShipping
     protected function calculate()
     {
         $this->getLogger()->info('Начат расчёт доставки');
+        if (!$this->isWeightAllowed()) {
+            return "Неподходящий вес заказа";
+        }
 
         $address_street = trim((string)$this->getAddress('street'));
 
@@ -775,5 +779,20 @@ class dostavistaShipping extends waShipping
     {
         if (isset($this->logger)) return $this->logger;
         return $this->logger = new NullLogger();
+    }
+
+    private function isWeightAllowed(): bool
+    {
+        $weight = $this->getTotalWeight();
+        if ($this->weight_limits['min'] && $weight < $this->weight_limits['min']) {
+            $this->getLogger()->error(sprintf("Вес заказа %0.3f кг. меньше минимального %0.3f кг", $weight, $this->weight_limits['min']));
+            return false;
+        }
+        if ($this->weight_limits['max'] && $weight >= $this->weight_limits['max']) {
+            $this->getLogger()->error(sprintf("Вес заказа %0.3f кг. больше или равен максимальному %0.3f кг", $weight, $this->weight_limits['max']));
+            return false;
+        }
+
+        return true;
     }
 }

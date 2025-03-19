@@ -18,6 +18,10 @@
                     <div class="value">
                         <label><input type="radio" :name="addns('api_server', info.namespace)" v-model="api_server" value="production"> Рабочий</label></div>
                 </wa-field>
+                <transport-type v-model.number="transport_type" :ns="addns('transport_type', info.namespace)"></transport-type>
+                <min-max-limits name="Ограничение по весу" v-model="weight_limits" :ns="addns('weight_limits', info.namespace)">
+                    кг. <br><span class="hint">Укажите минимальный и/или максимальный вес заказа</span>
+                </min-max-limits>
                 <delivery-time v-model="delivery_time" :ns="addns('delivery_time', info.namespace)"></delivery-time>
                 <wa-field name="Среднее количество часов доставки" v-show="delivery_time === 'exact_delivery_time'">
                     <div class="value">
@@ -77,6 +81,8 @@
     import AboutPage from "../components/about/AboutPage.vue";
     import SmsNotifications from "../components/sms-notifications.vue"
     import OperatingRegion from "../components/OperatingRegion.vue";
+    import TransportType from "../components/TransportType.vue";
+    import MinMaxLimits from "../components/MinMaxLimits.vue";
 
     export default {
         props: {
@@ -88,6 +94,8 @@
             return this.settings
         },
         components: {
+            MinMaxLimits,
+            TransportType,
             OperatingRegion,
             LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule, AboutPage, SmsNotifications}
     }

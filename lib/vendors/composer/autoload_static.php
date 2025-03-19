@@ -11,6 +11,7 @@ class ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c
         array (
             'Syrnik\\' => 7,
             'SergeR\\Util\\EvalMath\\' => 21,
+            'SergeR\\Typecaster\\' => 18,
             'SergeR\\CakeUtility\\' => 19,
             'SergeR\\' => 7,
         ),
@@ -28,6 +29,10 @@ class ComposerStaticInitb0fc5083b50f57d0d9d97c207e4b3f9c
         'SergeR\\Util\\EvalMath\\' => 
         array (
             0 => __DIR__ . '/..' . '/serger/eval-math/src',
+        ),
+        'SergeR\\Typecaster\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/serger/typecaster/src',
         ),
         'SergeR\\CakeUtility\\' => 
         array (

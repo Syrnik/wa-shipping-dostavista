@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "137f1da377f1dcfaa9003a85649a60bd",
+    "content-hash": "d740a10154994182fa032b6924132f82",
     "packages": [
         {
             "name": "psr/log",
@@ -202,6 +202,50 @@
                 "issues": "https://github.com/SergeR/process-logger/issues"
             },
             "time": "2020-02-14T17:27:12+00:00"
+        },
+        {
+            "name": "serger/typecaster",
+            "version": "v1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/SergeR/typecaster.git",
+                "reference": "b956afa16ec29fa6a86ad9cf38ab165f75ba66bc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/SergeR/typecaster/zipball/b956afa16ec29fa6a86ad9cf38ab165f75ba66bc",
+                "reference": "b956afa16ec29fa6a86ad9cf38ab165f75ba66bc",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "php": ">=7.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "SergeR\\Typecaster\\": "src"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Serge Rodovnichenko",
+                    "email": "serge@syrnik.com"
+                }
+            ],
+            "description": "Simple typecasting with no external dependencies",
+            "keywords": [
+                "typecast",
+                "typecasting"
+            ],
+            "support": {
+                "source": "https://github.com/SergeR/typecaster/tree/master",
+                "issues": "https://github.com/SergeR/typecaster/issues"
+            },
+            "time": "2023-04-21T08:00:26+00:00"
         },
         {
             "name": "syrnik/wa-shipping-utils",

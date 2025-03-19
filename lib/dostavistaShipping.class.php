@@ -679,11 +679,10 @@ class dostavistaShipping extends waShipping
                     break;
                 }
                 $formula = strtolower($formula);
-                $formula = str_replace(',', '.', $formula);
                 try {
                     $math = new EvalMath();
                     $math->evaluate('y=' . WaShippingUtils::monetaryString((float)$this->getTotalRawPrice()));
-                    $math->evaluate('t=' . WaShippingUtils::monetaryString((float)$this->getTotalPrice()));
+                    $math->evaluate('z=' . WaShippingUtils::monetaryString((float)$this->getTotalPrice()));
                     $value = $math->evaluate($formula);
                     if ($value === false) {
                         $value = 0;

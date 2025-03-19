@@ -4,7 +4,7 @@ return array(
     'description'         => 'Расчёт стоимости доставки курьерской службой Dostavista',
     'icon'                => 'img/icon16.png',
     'logo'                => 'img/dostavista.png',
-    'version'             => '2.1.2',
+    'version'             => '2.1.3',
     'vendor'              => '670917',
     'external'            => true,
     'services_by_type'    => true,

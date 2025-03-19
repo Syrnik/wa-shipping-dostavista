@@ -18,6 +18,7 @@
                     <div class="value">
                         <label><input type="radio" :name="addns('api_server', info.namespace)" v-model="api_server" value="production"> Рабочий</label></div>
                 </wa-field>
+                <transport-type v-model.number="transport_type" :ns="addns('transport_type', info.namespace)"></transport-type>
                 <delivery-time v-model="delivery_time" :ns="addns('delivery_time', info.namespace)"></delivery-time>
                 <wa-field name="Среднее количество часов доставки" v-show="delivery_time === 'exact_delivery_time'">
                     <div class="value">
@@ -77,6 +78,7 @@
     import AboutPage from "../components/about/AboutPage.vue";
     import SmsNotifications from "../components/sms-notifications.vue"
     import OperatingRegion from "../components/OperatingRegion.vue";
+    import TransportType from "../components/TransportType.vue";
 
     export default {
         props: {
@@ -88,6 +90,7 @@
             return this.settings
         },
         components: {
+            TransportType,
             OperatingRegion,
             LocationFrom, DeliveryTime, CustomerInterval, Dates, Insurance, LocationRule, AboutPage, SmsNotifications}
     }

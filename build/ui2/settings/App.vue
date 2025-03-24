@@ -13,6 +13,8 @@ import Surcharge from "./Surcharge.vue";
 import FreeDelivery from "./FreeDelivery.vue";
 import SmsNotifications from "./SmsNotifications.vue";
 import PluginHeader from "./PluginHeader.vue";
+import TransportType from "./TransportType.vue";
+import LimitsWeight from "./LimitsWeight.vue";
 
 const props = defineProps(['info', 'settings']);
 const setting = reactive(props.settings);
@@ -29,6 +31,12 @@ onMounted(() => document.getElementsByClassName('article')?.[0]?.classList.add('
             <token-api v-model.trim="setting.token"/>
             <operating-region v-model="setting.operating_region" :region-list="info.lists.regions"/>
             <location-from v-model="setting.location_from.name"/>
+        </div>
+        <div class="fields-group">
+            <transport-type v-model="setting.transport_type"/>
+        </div>
+        <div class="fields-group">
+            <limits-weight v-model="setting.weight_limits"/>
         </div>
         <div class="fields-group">
             <delivery-time-control v-model="setting.delivery_time" v-model:exact-hours="setting.exact_delivery_time"/>

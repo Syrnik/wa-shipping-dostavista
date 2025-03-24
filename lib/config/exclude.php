@@ -45,5 +45,6 @@ return array(
     '*/.travis.yml',
     'psalm.xml',
     '.editorconfig',
-    '*/.editorconfig'
+    '*/.editorconfig',
+    '*/tests/*',
 );

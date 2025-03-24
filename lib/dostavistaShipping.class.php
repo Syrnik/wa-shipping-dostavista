@@ -9,6 +9,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 use SergeR\ProcessLogger;
+use SergeR\Typecaster\Typecast;
 use SergeR\Util\EvalMath\EvalMath;
 use SergeR\Util\EvalMath\Exception\EvalMathException;
 use Syrnik\WaShippingUtils;
@@ -41,6 +42,8 @@ use Syrnik\WaShippingUtils;
  * @property-read array{client:bool, receiver:string} $sms_notify
  * @property-read string $surcharge
  * @property-read ?float $free_delivery
+ * @property-read array{min:float|null, max:float|null} $weight_limits
+ * @property-read int|null $transport_type
  */
 class dostavistaShipping extends waShipping
 {
@@ -173,11 +176,24 @@ class dostavistaShipping extends waShipping
                 case 'sms_notify':
                     $data = (array)$data;
                     $client = (bool)ifset($data, 'client', false);
-                    $receiver = (string)ifset($data, 'receiver', 'no');
+                    $receiver = (string)($data['receiver'] ?? 'no');
                     if (!in_array($receiver, ['no', 'yes', 'ask_no', 'ask_yes'])) {
                         $receiver = 'no';
                     }
                     $data = ['client' => $client, 'receiver' => $receiver];
+                    break;
+                case 'transport_type':
+                    $data = empty($data) ? 0 : (int)$data;
+                    break;
+                case 'weight_limits':
+                    if (!is_array($data)) {
+                        $data = ['min' => null, 'max' => null];
+                    } else {
+                        foreach ($data as &$datum) {
+                            $datum = Typecast::floatval($datum, 3, 0, null, true);
+                        }
+                        unset($datum);
+                    }
                     break;
             }
             $settings[$key] = $data;
@@ -298,41 +314,52 @@ class dostavistaShipping extends waShipping
      */
     protected function getDeliveryTimes(): array
     {
-        if (!$this->delivery_time) {
+        $this->getLogger()->info('Начато вычисление срока доставки');
+
+        $this->getLogger()->info("Настройка времени доставки: $this->delivery_time");
+        if (empty($this->delivery_time)) {
+            $this->getLogger()->info('Настройка времени доставки не задана, ничего не показываем');
             return ['timestamp' => null, 'estimate' => null];
         }
 
         /** @var string $departure_datetime SQL DATETIME */
         $departure_datetime = $this->getPackageProperty('departure_datetime');
+        $this->getLogger()->info("ShopScript передал время отправки заказа: '$departure_datetime'");
 
-        $departure_timestamp = $departure_datetime ? max(0, strtotime($departure_datetime) - $this->getSchedule()['time']) : 0;
+        /** @var int $time_to_go Сколько времени до готовности */
+        $time_to_go = $departure_datetime ? max(0, strtotime($departure_datetime) - $this->getSchedule()['time']) : 0;
 
         if ('exact_delivery_time' === $this->delivery_time) {
-            $delivery_date = [
-                $this->getSchedule()['time'] + max(0, $this->exact_delivery_time) * 3600 + $departure_timestamp,
+            // Прибавить точное количество часов
+            $delivery_timestamps = [
+                $this->getSchedule()['time'] + max(0, $this->exact_delivery_time) * 3600 + $time_to_go,
             ];
         } else {
-            $delivery_date = array_map('strtotime', explode(',', $this->delivery_time, 2));
-            foreach ($delivery_date as & $date) {
-                $date += $departure_timestamp;
-            }
-            unset($date);
-            $delivery_date = array_unique($delivery_date);
+            // Или прибавить настройку типа "+1 day,+2 days" и получить массив меток времени
+            $delivery_timestamps = array_map('strtotime', explode(',', $this->delivery_time, 2));
+            array_walk($delivery_timestamps, fn(&$v) => $v += $time_to_go);
+            $delivery_timestamps = array_unique($delivery_timestamps);
         }
 
-        $est_delivery = array();
-        foreach ($delivery_date as $date) {
-            $est_delivery[] = waDateTime::format('humandate', $date);
+        // est_delivery — для старого оформления строка "12 марта - 13 марта"
+        $est_delivery = [];
+        // delivery_date — даты для оформления в корзине
+        $delivery_date = [];
+        foreach ($delivery_timestamps as $delivery_timestamp) {
+            $est_delivery[] = waDateTime::format('humandate', $delivery_timestamp);
+            $delivery_date[] = date('Y-m-d H:i:s', $delivery_timestamp);
         }
         $est_delivery = implode(' — ', $est_delivery);
 
-        if (count($delivery_date) == 1) {
+        if (count($delivery_timestamps) === 1) {
+            $delivery_timestamps = reset($delivery_timestamps);
             $delivery_date = reset($delivery_date);
         }
 
         return array(
-            'timestamp' => $delivery_date,
-            'estimate'  => $est_delivery,
+            'timestamp'     => $delivery_timestamps, // Набор меток времени для показа в поле выбора интервала и формирования даты доставки в оформлении в корзине
+            'estimate'      => $est_delivery,
+            'delivery_date' => $delivery_date
         );
     }
 
@@ -437,28 +464,12 @@ class dostavistaShipping extends waShipping
     protected function calculate()
     {
         $this->getLogger()->info('Начат расчёт доставки');
-
-        $calculation_order = $this->createDostavistaOrder();
-        if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
-            $this->getLogger()->info('Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API');
-            $this->getLogger()->debug("Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT));
-            $t = microtime(true);
-            $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
-                ->CalculateOrder($calculation_order);
-            $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true)-$t, 3) .' с.');
-            $this->getLogger()->debug("Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE));
-            $this->getCache()->saveCalculation($response, $calculation_order, $this->token, 'test' === $this->api_server);
-        } else {
-            $this->getLogger()->info('Результат расчёта извлечён из кэша');
+        if (!$this->isWeightAllowed()) {
+            return "Неподходящий вес заказа";
         }
 
-        if ($error = $this->getError($response)) {
-            $this->getLogger()->info("Ошибка: '$error'");
-            return [['rate' => null, 'comment' => $error]];
-        }
+        $address_street = trim((string)$this->getAddress('street'));
 
-
-        $rate = (float)$response['order']['payment_amount'];
         $result = [
             self::VARIANT_ID => [
                 'currency' => 'RUB',
@@ -466,20 +477,46 @@ class dostavistaShipping extends waShipping
             ]
         ];
 
-        $result[self::VARIANT_ID]['rate'] = empty($this->surcharge)
-            ? $rate
-            : WaShippingUtils::calcTotalCost(
-                $rate,
-                (float)$this->getTotalPrice(),
-                (float)$this->getTotalRawPrice(),
-                $this->surcharge ?: '',
-                'formula',
-                (string)$this->free_delivery
-            );
+        if ($address_street) {
+            $calculation_order = $this->createDostavistaOrder();
+            if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
+                $this->getLogger()->info('Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API');
+                $this->getLogger()->debug("Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                $t = microtime(true);
+                $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
+                    ->CalculateOrder($calculation_order);
+                $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true) - $t, 3) . ' с.');
+                $this->getLogger()->debug("Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                $this->getCache()->saveCalculation($response, $calculation_order, $this->token, 'test' === $this->api_server);
+            } else {
+                $this->getLogger()->info('Результат расчёта извлечён из кэша');
+            }
 
-        if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
-            $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
-            $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
+            if ($error = $this->getError($response)) {
+                $this->getLogger()->info("Ошибка: '$error'");
+                return [['rate' => null, 'comment' => $error]];
+            }
+
+
+            $rate = (float)$response['order']['payment_amount'];
+
+            $result[self::VARIANT_ID]['rate'] = empty($this->surcharge)
+                ? $rate
+                : WaShippingUtils::calcTotalCost(
+                    $rate,
+                    (float)$this->getTotalPrice(),
+                    (float)$this->getTotalRawPrice(),
+                    $this->surcharge ?: '',
+                    'formula',
+                    (string)$this->free_delivery
+                );
+
+            if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
+                $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
+                $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
+            }
+        } else {
+            $result[self::VARIANT_ID]['rate'] = null;
         }
 
         try {
@@ -489,6 +526,8 @@ class dostavistaShipping extends waShipping
             return 'Ошибка расчёта';
         }
         $result[self::VARIANT_ID]['est_delivery'] = $delivery_times['estimate'];
+        $result[self::VARIANT_ID]['delivery_date'] = $delivery_times['delivery_date'];
+
 
         $setting = $this->customer_interval;
         if (!empty($setting['intervals'])) {
@@ -505,28 +544,33 @@ class dostavistaShipping extends waShipping
             foreach ($setting['intervals'] as $interval) {
                 $interval = $this->getInterval($interval, $delivery_times['timestamp']);
 
-                if (!empty($interval['start_date'])) {
+                if ($interval['start_date']) {
                     $key = $interval['interval'];
                     $intervals[$key] = array_keys($interval['day']);
                     $intervals[$key]['offset'] = $interval['offset'];
-                    if (!isset($result[self::VARIANT_ID]['delivery_date'])
-                        || (strtotime($result[self::VARIANT_ID]['delivery_date']) > strtotime($interval['start_date']))
-                    ) {
+                    if (empty($result[self::VARIANT_ID]['delivery_date'])) {
                         $delivery['delivery_date'] = $interval['start_date'];
+                    } else {
+                        $delivery_date = is_array($result[self::VARIANT_ID]['delivery_date']) ? min($result[self::VARIANT_ID]['delivery_date']) : $result[self::VARIANT_ID]['delivery_date'];
+                        if (strtotime($delivery_date) > strtotime($interval['start_date'])) {
+                            $delivery['delivery_date'] = $interval['start_date'];
+                        }
                     }
 
-                    if ((null === $offset) || ($offset > $interval['offset'])) {
+                    if (null === $offset || $offset > $interval['offset']) {
                         $offset = $interval['offset'];
                     }
                 }
             }
 
             try {
-                if ($delivery ?? false)
+                if ($delivery ?? false) {
                     $placeholder = waDateTime::format($date_format, $delivery['delivery_date']);
+                }
             } catch (waException $e) {
 
             }
+
             $custom_data = array(
                 'offset'      => $offset,
                 'intervals'   => $intervals,
@@ -670,8 +714,13 @@ class dostavistaShipping extends waShipping
 
         $order->setInsuranceAmount($this->getInsuranceAppraisedValue());
 
-        if ($this->isCashOnDeliverySelected())
+        if ($this->isCashOnDeliverySelected()) {
             $destination_point->setTakingAmount(new dostavistaShippingApiEntityMoney((float)$this->getTotalPrice()));
+        }
+
+        if ($this->transport_type) {
+            $order->setVehicleType(new dostavistaShippingApiEntityEnumVehicleType($this->transport_type));
+        }
 
         $order->setPoints($start_point, $destination_point);
 
@@ -734,5 +783,20 @@ class dostavistaShipping extends waShipping
     {
         if (isset($this->logger)) return $this->logger;
         return $this->logger = new NullLogger();
+    }
+
+    private function isWeightAllowed(): bool
+    {
+        $weight = $this->getTotalWeight();
+        if ($this->weight_limits['min'] && $weight < $this->weight_limits['min']) {
+            $this->getLogger()->error(sprintf("Вес заказа %0.3f кг. меньше минимального %0.3f кг", $weight, $this->weight_limits['min']));
+            return false;
+        }
+        if ($this->weight_limits['max'] && $weight >= $this->weight_limits['max']) {
+            $this->getLogger()->error(sprintf("Вес заказа %0.3f кг. больше или равен максимальному %0.3f кг", $weight, $this->weight_limits['max']));
+            return false;
+        }
+
+        return true;
     }
 }

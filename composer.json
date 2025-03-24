@@ -24,6 +24,7 @@
     "serger/cake-utility": "^1",
     "syrnik/wa-shipping-utils": "^2",
     "serger/process-logger": "^1",
-    "serger/eval-math": "^2"
+    "serger/eval-math": "^2",
+    "serger/typecaster": "^1"
   }
 }

@@ -1,58 +1,40 @@
 <div id="{$plugin_id}-shipping-settings"></div>
-<style>
-    #shipping-{$plugin_id}-settings-app, #shipping-{$plugin_id}-settings-app .tabs-component, #shipping-{$plugin_id}-settings-app .tab-content {
-        box-sizing: border-box;
-    }
-    #shipping-{$plugin_id}-settings-app div.value.reloading {
-        position: absolute;
-        top: 0;
-        background: rgba(255,255,255,0.7) url('{$wa_static_url}wa-plugins/shipping/{$plugin_id}/img/ajax-loader.gif') left 10px top 10px no-repeat;
-        height: 100%;
-        width: 100%;
-    }
-    #shipping-{$plugin_id}-settings-app div.value ul { list-style: none; margin: 0; padding: 0 }
-    #shipping-{$plugin_id}-settings-app div.value li { list-style: none; margin: 0.5rem 0}
-    #shipping-{$plugin_id}-settings-app .sortable i.icon16.sort:hover { cursor: ns-resize }
-    #shipping-{$plugin_id}-settings-app .display-none { display: none }
-    #shipping-{$plugin_id}-settings-app .value .vdp-datepicker .cell.selected { background-color: transparent }
-    #shipping-{$plugin_id}-settings-app .holidays .value .vdp-datepicker .cell.highlighted { background-color: #cfc }
-    #shipping-{$plugin_id}-settings-app .holidays .value .vdp-datepicker .cell.selected.highlighted { background-color: #cfc }
-    #shipping-{$plugin_id}-settings-app .holidays .vue-dates-list > li { background-color: #cfc; border-color: lightgreen }
-    #shipping-{$plugin_id}-settings-app .workdays .value .vdp-datepicker .cell.highlighted { background-color: #fcc }
-    #shipping-{$plugin_id}-settings-app .workdays .value .vdp-datepicker .cell.selected.highlighted { background-color: #fcc }
-    #shipping-{$plugin_id}-settings-app .workdays .vue-dates-list > li { background-color: #fcc; border-color: rosybrown }
-    #w-dostavista-region-dialog .dialog-window > div { height: 100% }
-    #w-dostavista-region-select-form { height: 100% }
-    #w-dostavista-region-select-form .dialog-content-indent { height: 100%; box-sizing: border-box }
-    .w-shipping-dostavista-region-list {
-        list-style: none;
-    }
-    .w-shipping-dostavista-region-list-item { padding: 0.25em 3px; }
-    .w-shipping-dostavista-region-list-item label { display: block; }
-    .w-shipping-dostavista-region-list-item:hover { background-color: #f0f0f0; }
-    @media screen and (min-width: 1280px) {
-        .w-shipping-dostavista-region-list { column-count: 3; column-gap: 1em; }
-    }
-    @media screen and (min-width: 960px) and (max-width: 1279px) {
-        .w-shipping-dostavista-region-list { column-count: 2; column-gap: 0.75em; }
-    }
-</style>
-<script type="text/javascript">
-    $(function () {
-        $.when($.Deferred(function (defer) {
-            if(typeof {$plugin_js_object} != 'undefined') {
-                defer.resolve();
-                return;
-            }
-            $.getScript('{$wa_static_url}wa-plugins/shipping/{$plugin_id}/js/settings-legacy.js').done(function () {
-                defer.resolve();
-            });
-        })).done(function () {
-            {$plugin_js_object}.run({
-                el: '#{$plugin_id}-shipping-settings',
-                info: {$info|json_encode:256},
-                settings: {$settings|json_encode:256}
-            });
-        });
-    })
+<script>
+  $(function () {
+    window.$_syrnik_current_locale = '{$wa->locale()}';
+
+    Promise.all([
+      new Promise(function (resolve, reject) {
+        var id = 'w-shipping-dostavista-plugin-settings-legacy-script';
+        if (document.getElementById(id)) { resolve(); return; }
+        var el = document.createElement('script');
+        el.src = '{$wa_static_url}wa-plugins/shipping/dostavista/js/settings-legacy.js?v={$info.version}';
+        el.id = id;
+        document.head.appendChild(el);
+        el.onload = function () { resolve(); };
+        el.onerror = function () { reject(new Error('Ошибка загрузки скрипта настроек.')); };
+      }),
+      new Promise(function (resolve, reject) {
+        var id = 'w-shipping-dostavista-plugin-settings-legacy-style';
+        if (document.getElementById(id)) { resolve(); return; }
+        var el = document.createElement('link');
+        el.rel = 'stylesheet';
+        el.type = 'text/css';
+        el.id = id;
+        el.href = '{$wa_static_url}wa-plugins/shipping/dostavista/css/settings-legacy.css?v={$info.version}';
+        document.head.appendChild(el);
+        el.onload = function () { resolve(); };
+        el.onerror = function () { reject(new Error('Ошибка загрузки стилей настроек.')); };
+      })
+    ]).then(function () {
+      ShippingDostavistaPluginSettings.run({
+        el: '#{$plugin_id}-shipping-settings',
+        info: {$info|json_encode:256},
+        settings: {$settings|json_encode:256}
+      });
+    }).catch(function (err) {
+      document.getElementById('{$plugin_id}-shipping-settings').innerHTML =
+        '<p class="red">' + err.message + '</p>';
+    });
+  });
 </script>

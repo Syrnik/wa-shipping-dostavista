@@ -255,8 +255,16 @@ class dostavistaShipping extends waShipping
         $setting = $this->customer_interval;
 
         if (!empty($this->customer_interval['interval']) || !empty($this->customer_interval['date'])) {
-            $from = (!strlen($this->delivery_time) || ($this->delivery_time === 'exact_delivery_time')) ? time() : strtotime(preg_replace('/,.+$/', '', $this->delivery_time));
-            $offset = max(0, round(($from - time()) / (24 * 3600)));
+            $delivery_times = $this->getDeliveryTimes();
+            $ts = $delivery_times['timestamp'];
+            $from = is_array($ts) ? reset($ts) : ($ts ?? time());
+            $now = $this->getSchedule()['time'];
+            $next_workday_ts = $now;
+            while (in_array(date('N', $next_workday_ts), ['6', '7'])
+                || in_array(date('Y-m-d', $next_workday_ts), $this->holidays)) {
+                $next_workday_ts += 86400;
+            }
+            $offset = max(0, round(($from - $next_workday_ts) / (24 * 3600)));
             $shipping_params = $order->shipping_params;
             $value = array();
 
@@ -271,7 +279,6 @@ class dostavistaShipping extends waShipping
             }
 
             if (!empty($setting['intervals'])) {
-                $delivery_times = $this->getDeliveryTimes();
                 foreach ($setting['intervals'] as &$interval) {
                     $interval = $this->getInterval($interval, $delivery_times['timestamp']);
                 }
@@ -328,6 +335,7 @@ class dostavistaShipping extends waShipping
 
         /** @var int $time_to_go Сколько времени до готовности */
         $time_to_go = $departure_datetime ? max(0, strtotime($departure_datetime) - $this->getSchedule()['time']) : 0;
+        $this->getLogger()->info("time_to_go: {$time_to_go} сек. (" . round($time_to_go / 3600, 2) . " ч.)");
 
         if ('exact_delivery_time' === $this->delivery_time) {
             // Прибавить точное количество часов
@@ -346,6 +354,7 @@ class dostavistaShipping extends waShipping
         // delivery_date — даты для оформления в корзине
         $delivery_date = [];
         foreach ($delivery_timestamps as $delivery_timestamp) {
+            $this->getLogger()->info("delivery_timestamp: {$delivery_timestamp} = " . date('Y-m-d H:i:s', $delivery_timestamp));
             $est_delivery[] = waDateTime::format('humandate', $delivery_timestamp);
             $delivery_date[] = date('Y-m-d H:i:s', $delivery_timestamp);
         }
@@ -355,6 +364,8 @@ class dostavistaShipping extends waShipping
             $delivery_timestamps = reset($delivery_timestamps);
             $delivery_date = reset($delivery_date);
         }
+
+        $this->getLogger()->info("Итоговая дата доставки: '" . (is_array($delivery_date) ? implode(', ', $delivery_date) : $delivery_date) . "', estimate: '$est_delivery'");
 
         return array(
             'timestamp'     => $delivery_timestamps, // Набор меток времени для показа в поле выбора интервала и формирования даты доставки в оформлении в корзине
@@ -437,6 +448,9 @@ class dostavistaShipping extends waShipping
                 break;
             }
         } while (empty($service_delivery_date));
+
+        $extra_workday_flag = ($interval['workday'] && in_array(date('Y-m-d', strtotime($service_delivery_date)), $this->workdays, true)) ? 'Y' : 'N';
+        $this->getLogger()->info("getInterval [{$result['interval']}]: start=" . date('Y-m-d', $start) . ", offset={$result['offset']}, extra_workday={$extra_workday_flag}, start_date={$service_delivery_date}");
 
         $_days = [];
         foreach ($interval['day'] as $value) {

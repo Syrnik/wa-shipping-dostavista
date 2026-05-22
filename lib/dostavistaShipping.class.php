@@ -139,7 +139,7 @@ class dostavistaShipping extends waShipping
     public function getSettings($name = null)
     {
         if(!isset($this->typecasted_settings)) {
-            $settings = parent::getSettings($name);
+            $settings = parent::getSettings();
             $this->typecasted_settings = $this->typecastSettings($settings);
         }
 

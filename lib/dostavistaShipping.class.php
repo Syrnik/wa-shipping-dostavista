@@ -305,7 +305,8 @@ class dostavistaShipping extends waShipping
                 'value'        => $value,
                 'title'        => 'Желаемое время доставки',
                 'control_type' => waHtmlControl::DATETIME,
-                'params'       => $params
+                'params'       => $params,
+                'data'         => ['affects-rate' => true]
             ];
 
         }

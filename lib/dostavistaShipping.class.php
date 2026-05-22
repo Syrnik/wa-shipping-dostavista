@@ -255,7 +255,15 @@ class dostavistaShipping extends waShipping
         $setting = $this->customer_interval;
 
         if (!empty($this->customer_interval['interval']) || !empty($this->customer_interval['date'])) {
-            $delivery_times = $this->getDeliveryTimes();
+            $order_params = $order->params;
+            $departure_datetime = $order_params['departure_datetime'] ?? date('Y-m-d H:i:s');
+
+            $timezone = $order_params['shop_time_zone'] ?? date_default_timezone_get();
+            if($timezone === false){
+                $timezone = null;
+            }
+
+            $delivery_times = $this->getDeliveryTimes($departure_datetime, $timezone);
             $ts = $delivery_times['timestamp'];
             $from = is_array($ts) ? reset($ts) : ($ts ?? time());
             $now = $this->getSchedule()['time'];
@@ -319,7 +327,7 @@ class dostavistaShipping extends waShipping
      * @return array{timestamp:int|array<int>, estimate:string}
      * @throws waException
      */
-    protected function getDeliveryTimes(): array
+    protected function getDeliveryTimes(string $departure_datetime, ?string $timezone): array
     {
         $this->getLogger()->info('Начато вычисление срока доставки');
 
@@ -329,12 +337,21 @@ class dostavistaShipping extends waShipping
             return ['timestamp' => null, 'estimate' => null];
         }
 
-        /** @var string $departure_datetime SQL DATETIME */
-        $departure_datetime = $this->getPackageProperty('departure_datetime');
-        $this->getLogger()->info("ShopScript передал время отправки заказа: '$departure_datetime'");
+        $this->getLogger()->info("ShopScript передал время отправки заказа: '$departure_datetime', timezone: '$timezone'");
+
+        $timezone = $timezone ?: date_default_timezone_get();
+
+        if($timezone) {
+            $timezone = timezone_open($timezone);
+            if($timezone === false) {
+                $timezone = null;
+            }
+        }
+
+        $departure_datetime = date_create_immutable($departure_datetime, $timezone);
 
         /** @var int $time_to_go Сколько времени до готовности */
-        $time_to_go = $departure_datetime ? max(0, strtotime($departure_datetime) - $this->getSchedule()['time']) : 0;
+        $time_to_go = $departure_datetime ? max(0, $departure_datetime->getTimestamp() - $this->getSchedule()['time']) : 0;
         $this->getLogger()->info("time_to_go: {$time_to_go} сек. (" . round($time_to_go / 3600, 2) . " ч.)");
 
         if ('exact_delivery_time' === $this->delivery_time) {
@@ -534,7 +551,9 @@ class dostavistaShipping extends waShipping
         }
 
         try {
-            $delivery_times = $this->getDeliveryTimes();
+            $departure_datetime = $this->getPackageProperty('departure_datetime');
+            $timezone = $this->getPackageProperty('shop_time_zone');
+            $delivery_times = $this->getDeliveryTimes($departure_datetime, $timezone);
         } catch (waException $e) {
             $this->getLogger()->error($e->getMessage());
             return 'Ошибка расчёта';

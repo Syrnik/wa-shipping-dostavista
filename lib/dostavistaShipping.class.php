@@ -84,7 +84,9 @@ class dostavistaShipping extends waShipping
 
     public function isAllowedAddress($address = array()): bool
     {
-        if (!$this->operating_region) return false;
+        if (!$this->operating_region) {
+            return false;
+        }
         return parent::isAllowedAddress($address);
     }
 
@@ -118,9 +120,11 @@ class dostavistaShipping extends waShipping
             'namespace' => $params['namespace'] ?? '',
         );
 
-        $info['lists']['regions'] = array_values(array_map(
+        $info['lists']['regions'] = array_values(
+            array_map(
                 fn($r) => ['code' => $r['code'], 'name' => $r['name']],
-                (new waRegionModel)->getByCountry('rus'))
+                (new waRegionModel)->getByCountry('rus')
+            )
         );
 
         $view = new waSmarty3View(wa());
@@ -138,7 +142,7 @@ class dostavistaShipping extends waShipping
      */
     public function getSettings($name = null)
     {
-        if(!isset($this->typecasted_settings)) {
+        if (!isset($this->typecasted_settings)) {
             $settings = parent::getSettings();
             $this->typecasted_settings = $this->typecastSettings($settings);
         }
@@ -259,7 +263,7 @@ class dostavistaShipping extends waShipping
             $departure_datetime = $order_params['departure_datetime'] ?? date('Y-m-d H:i:s');
 
             $timezone = $order_params['shop_time_zone'] ?? date_default_timezone_get();
-            if($timezone === false){
+            if ($timezone === false) {
                 $timezone = null;
             }
 
@@ -308,7 +312,6 @@ class dostavistaShipping extends waShipping
                 'params'       => $params,
                 'data'         => ['affects-rate' => true]
             ];
-
         }
 
 //        if (in_array($this->sms_notify['receiver'], ['ask_yes', 'ask_no'])) {
@@ -338,13 +341,15 @@ class dostavistaShipping extends waShipping
             return ['timestamp' => null, 'estimate' => null];
         }
 
-        $this->getLogger()->info("ShopScript передал время отправки заказа: '$departure_datetime', timezone: '$timezone'");
+        $this->getLogger()->info(
+            "ShopScript передал время отправки заказа: '$departure_datetime', timezone: '$timezone'"
+        );
 
         $timezone = $timezone ?: date_default_timezone_get();
 
-        if($timezone) {
+        if ($timezone) {
             $timezone = timezone_open($timezone);
-            if($timezone === false) {
+            if ($timezone === false) {
                 $timezone = null;
             }
         }
@@ -352,7 +357,10 @@ class dostavistaShipping extends waShipping
         $departure_datetime = date_create_immutable($departure_datetime, $timezone);
 
         /** @var int $time_to_go Сколько времени до готовности */
-        $time_to_go = $departure_datetime ? max(0, $departure_datetime->getTimestamp() - $this->getSchedule()['time']) : 0;
+        $time_to_go = $departure_datetime ? max(
+            0,
+            $departure_datetime->getTimestamp() - $this->getSchedule()['time']
+        ) : 0;
         $this->getLogger()->info("time_to_go: {$time_to_go} сек. (" . round($time_to_go / 3600, 2) . " ч.)");
 
         if ('exact_delivery_time' === $this->delivery_time) {
@@ -372,7 +380,9 @@ class dostavistaShipping extends waShipping
         // delivery_date — даты для оформления в корзине
         $delivery_date = [];
         foreach ($delivery_timestamps as $delivery_timestamp) {
-            $this->getLogger()->info("delivery_timestamp: {$delivery_timestamp} = " . date('Y-m-d H:i:s', $delivery_timestamp));
+            $this->getLogger()->info(
+                "delivery_timestamp: {$delivery_timestamp} = " . date('Y-m-d H:i:s', $delivery_timestamp)
+            );
             $est_delivery[] = waDateTime::format('humandate', $delivery_timestamp);
             $delivery_date[] = date('Y-m-d H:i:s', $delivery_timestamp);
         }
@@ -383,10 +393,16 @@ class dostavistaShipping extends waShipping
             $delivery_date = reset($delivery_date);
         }
 
-        $this->getLogger()->info("Итоговая дата доставки: '" . (is_array($delivery_date) ? implode(', ', $delivery_date) : $delivery_date) . "', estimate: '$est_delivery'");
+        $this->getLogger()->info(
+            "Итоговая дата доставки: '" . (is_array($delivery_date) ? implode(
+                ', ',
+                $delivery_date
+            ) : $delivery_date) . "', estimate: '$est_delivery'"
+        );
 
         return array(
-            'timestamp'     => $delivery_timestamps, // Набор меток времени для показа в поле выбора интервала и формирования даты доставки в оформлении в корзине
+            'timestamp'     => $delivery_timestamps,
+            // Набор меток времени для показа в поле выбора интервала и формирования даты доставки в оформлении в корзине
             'estimate'      => $est_delivery,
             'delivery_date' => $delivery_date
         );
@@ -447,7 +463,6 @@ class dostavistaShipping extends waShipping
             $is_extra_holiday = $is_holiday && $interval['holiday'];
 
             if (!$is_holiday || $is_extra_holiday) {
-
                 $is_extra_workday = $interval['workday'] && in_array($service_date, $this->workdays, true);
                 $is_workday = $is_extra_holiday || $is_extra_workday || in_array($week_day, $interval['day']);
 
@@ -467,8 +482,17 @@ class dostavistaShipping extends waShipping
             }
         } while (empty($service_delivery_date));
 
-        $extra_workday_flag = ($interval['workday'] && in_array(date('Y-m-d', strtotime($service_delivery_date)), $this->workdays, true)) ? 'Y' : 'N';
-        $this->getLogger()->info("getInterval [{$result['interval']}]: start=" . date('Y-m-d', $start) . ", offset={$result['offset']}, extra_workday={$extra_workday_flag}, start_date={$service_delivery_date}");
+        $extra_workday_flag = ($interval['workday'] && in_array(
+                date('Y-m-d', strtotime($service_delivery_date)),
+                $this->workdays,
+                true
+            )) ? 'Y' : 'N';
+        $this->getLogger()->info(
+            "getInterval [{$result['interval']}]: start=" . date(
+                'Y-m-d',
+                $start
+            ) . ", offset={$result['offset']}, extra_workday={$extra_workday_flag}, start_date={$service_delivery_date}"
+        );
 
         $_days = [];
         foreach ($interval['day'] as $value) {
@@ -511,15 +535,30 @@ class dostavistaShipping extends waShipping
 
         if ($address_street) {
             $calculation_order = $this->createDostavistaOrder();
-            if (!($response = $this->getCache()->getCalculation($calculation_order, $this->token, 'test' === $this->api_server))) {
-                $this->getLogger()->info('Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API');
-                $this->getLogger()->debug("Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+            if (!($response = $this->getCache()->getCalculation(
+                $calculation_order,
+                $this->token,
+                'test' === $this->api_server
+            ))) {
+                $this->getLogger()->info(
+                    'Используется ' . ($this->api_server === 'test' ? 'тестовый' : 'рабочий') . ' сервер API'
+                );
+                $this->getLogger()->debug(
+                    "Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+                );
                 $t = microtime(true);
                 $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
                     ->CalculateOrder($calculation_order);
                 $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true) - $t, 3) . ' с.');
-                $this->getLogger()->debug("Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-                $this->getCache()->saveCalculation($response, $calculation_order, $this->token, 'test' === $this->api_server);
+                $this->getLogger()->debug(
+                    "Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+                );
+                $this->getCache()->saveCalculation(
+                    $response,
+                    $calculation_order,
+                    $this->token,
+                    'test' === $this->api_server
+                );
             } else {
                 $this->getLogger()->info('Результат расчёта извлечён из кэша');
             }
@@ -544,8 +583,12 @@ class dostavistaShipping extends waShipping
                 );
 
             if ($destination_address = $response['order']['points'][1]['address'] ?? null) {
-                $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll($destination_address);
-                $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll($destination_address);
+                $result[self::VARIANT_ID]['comment'] = "курьером по адресу: " . waString::escapeAll(
+                        $destination_address
+                    );
+                $result[self::VARIANT_ID]['custom_data'][waShipping::TYPE_TODOOR]['additional'] = "Доставка курьером по адресу: " . waString::escapeAll(
+                        $destination_address
+                    );
             }
         } else {
             $result[self::VARIANT_ID]['rate'] = null;
@@ -585,7 +628,9 @@ class dostavistaShipping extends waShipping
                     if (empty($result[self::VARIANT_ID]['delivery_date'])) {
                         $delivery['delivery_date'] = $interval['start_date'];
                     } else {
-                        $delivery_date = is_array($result[self::VARIANT_ID]['delivery_date']) ? min($result[self::VARIANT_ID]['delivery_date']) : $result[self::VARIANT_ID]['delivery_date'];
+                        $delivery_date = is_array($result[self::VARIANT_ID]['delivery_date']) ? min(
+                            $result[self::VARIANT_ID]['delivery_date']
+                        ) : $result[self::VARIANT_ID]['delivery_date'];
                         if (strtotime($delivery_date) > strtotime($interval['start_date'])) {
                             $delivery['delivery_date'] = $interval['start_date'];
                         }
@@ -602,7 +647,6 @@ class dostavistaShipping extends waShipping
                     $placeholder = waDateTime::format($date_format, $delivery['delivery_date']);
                 }
             } catch (waException $e) {
-
             }
 
             $custom_data = array(
@@ -623,13 +667,18 @@ class dostavistaShipping extends waShipping
 
     protected function getError(array $response): ?string
     {
-        if (!$response['is_successful']) return 'Доставка по указанному адресу невозможна';
+        if (!$response['is_successful']) {
+            return 'Доставка по указанному адресу невозможна';
+        }
         if ($warnings = $response['warnings'] ?? []) {
             if (!in_array('invalid_parameters', $warnings)) {
                 return 'Доставка по указанному адресу невозможна';
             }
         }
-        if (($parameter_warnings = $response['parameter_warnings'] ?? []) || in_array('invalid_parameters', $warnings)) {
+        if (($parameter_warnings = $response['parameter_warnings'] ?? []) || in_array(
+                'invalid_parameters',
+                $warnings
+            )) {
             return 'Доставка по указанному адресу невозможна';
         }
 
@@ -680,8 +729,9 @@ class dostavistaShipping extends waShipping
         if (
             ('москва' === $searchable_city && in_array($address['region'], ['77', '50'])) ||
             ('санкт-петербург' === $searchable_city && in_array($address['region'], ['78', '47']))
-        ) $region_name = '';
-        else {
+        ) {
+            $region_name = '';
+        } else {
             $region_data = (new waRegionModel)->get('rus', $address['region']);
             $region_name = $region_data['name'] ?? '';
         }
@@ -720,7 +770,9 @@ class dostavistaShipping extends waShipping
                     $value = $math->evaluate($formula);
                     if ($value === false) {
                         $value = 0;
-                    } else $value = max((float)$value, 0);
+                    } else {
+                        $value = max((float)$value, 0);
+                    }
                 } catch (EvalMathException $e) {
                     $value = 0;
                 }
@@ -762,7 +814,10 @@ class dostavistaShipping extends waShipping
         $this->getLogger()->info("Отправление от: '{$start_point->getAddress()}'");
         $this->getLogger()->info("Доставка до: '{$destination_point->getAddress()}'");
         $this->getLogger()->info("Стоимость для расчёта страховки: {$order->getInsuranceAmount()}₽");
-        $this->getLogger()->info("Наложенный платёж: " . $this->isCashOnDeliverySelected() ? $destination_point->getTakingAmount() . '₽' : 'нет');
+        $this->getLogger()->info(
+            "Наложенный платёж: " . $this->isCashOnDeliverySelected() ? $destination_point->getTakingAmount(
+                ) . '₽' : 'нет'
+        );
 
         return $order;
     }
@@ -791,10 +846,16 @@ class dostavistaShipping extends waShipping
      */
     public function getCache(): dostavistaShippingCache
     {
-        if (isset($this->cache)) return $this->cache;
+        if (isset($this->cache)) {
+            return $this->cache;
+        }
         $cache = wa()->getCache('dostavista_shipping', 'webasyst');
-        if (!$cache) $cache = wa()->getCache('default', 'webasyst');
-        if (!$cache) $cache = new waCache(new waFileCacheAdapter([]), 'webasyst');
+        if (!$cache) {
+            $cache = wa()->getCache('default', 'webasyst');
+        }
+        if (!$cache) {
+            $cache = new waCache(new waFileCacheAdapter([]), 'webasyst');
+        }
 
         return new dostavistaShippingCache($cache);
     }
@@ -815,7 +876,9 @@ class dostavistaShipping extends waShipping
      */
     public function getLogger()
     {
-        if (isset($this->logger)) return $this->logger;
+        if (isset($this->logger)) {
+            return $this->logger;
+        }
         return $this->logger = new NullLogger();
     }
 
@@ -823,11 +886,19 @@ class dostavistaShipping extends waShipping
     {
         $weight = $this->getTotalWeight();
         if ($this->weight_limits['min'] && $weight < $this->weight_limits['min']) {
-            $this->getLogger()->error(sprintf("Вес заказа %0.3f кг. меньше минимального %0.3f кг", $weight, $this->weight_limits['min']));
+            $this->getLogger()->error(
+                sprintf("Вес заказа %0.3f кг. меньше минимального %0.3f кг", $weight, $this->weight_limits['min'])
+            );
             return false;
         }
         if ($this->weight_limits['max'] && $weight >= $this->weight_limits['max']) {
-            $this->getLogger()->error(sprintf("Вес заказа %0.3f кг. больше или равен максимальному %0.3f кг", $weight, $this->weight_limits['max']));
+            $this->getLogger()->error(
+                sprintf(
+                    "Вес заказа %0.3f кг. больше или равен максимальному %0.3f кг",
+                    $weight,
+                    $this->weight_limits['max']
+                )
+            );
             return false;
         }
 

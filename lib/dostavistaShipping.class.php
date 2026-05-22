@@ -56,6 +56,8 @@ class dostavistaShipping extends waShipping
 
     protected LoggerInterface $logger;
 
+    protected ?array $typecasted_settings;
+
     /**
      * @return string
      */
@@ -136,22 +138,19 @@ class dostavistaShipping extends waShipping
      */
     public function getSettings($name = null)
     {
-        $settings = parent::getSettings($name);
-
-        if ($name === null) {
-            $settings = $this->_typecastSettings($settings);
-        } else {
-            $settings = $this->_typecastSettings([$name => $settings])[$name];
+        if(!isset($this->typecasted_settings)) {
+            $settings = parent::getSettings($name);
+            $this->typecasted_settings = $this->typecastSettings($settings);
         }
 
-        return $settings;
+        return isset($name) ? ($this->typecasted_settings[$name] ?? null) : $this->typecasted_settings;
     }
 
     /**
      * @param array $settings
      * @return array
      */
-    protected function _typecastSettings(array $settings): array
+    protected function typecastSettings(array $settings): array
     {
         foreach ($settings as $key => $data) {
             switch ($key) {
@@ -238,7 +237,8 @@ class dostavistaShipping extends waShipping
             $settings['customer_interval'] = $this->castCustomerInterval((array)$settings['customer_interval']);
         }
 
-        $settings = $this->_typecastSettings($settings);
+        $settings = $this->typecastSettings($settings);
+        $this->typecasted_settings = null;
 
         return parent::saveSettings($settings);
     }

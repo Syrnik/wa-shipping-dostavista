@@ -56,6 +56,16 @@ class dostavistaShippingApi
     }
 
     /**
+     * @param string|null $date
+     * @return array
+     * @throws waException
+     */
+    public function DeliveryIntervals(?string $date = null): array
+    {
+        return $this->query(new dostavistaShippingDeliveryIntervals($date));
+    }
+
+    /**
      * @param dostavistaShippingApiQueryInterface $query
      * @return array
      * @throws waException

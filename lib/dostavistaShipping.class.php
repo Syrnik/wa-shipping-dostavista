@@ -525,6 +525,11 @@ class dostavistaShipping extends waShipping
         }
 
         $address_street = trim((string)$this->getAddress('street'));
+        /** @var string $departure_datetime Y-m-d H:i:s */
+        $departure_datetime = $this->getPackageProperty('departure_datetime');
+        /** @var string|null $timezone like 'Moscow/Russia' */
+        $timezone = $this->getPackageProperty('shop_time_zone');
+        $p = $this->getPackageProperty('shipping_params');
 
         $result = [
             self::VARIANT_ID => [
@@ -533,8 +538,11 @@ class dostavistaShipping extends waShipping
             ]
         ];
 
+        $same_day_interval = $this->resolveSameDayInterval($p ?? [], $departure_datetime);
+        $this->getLogger()->info('Тип расчёта: ' . ($same_day_interval !== null ? 'same_day' : 'standard'));
+
         if ($address_street) {
-            $calculation_order = $this->createDostavistaOrder();
+            $calculation_order = $this->createDostavistaOrder($same_day_interval);
             if (!($response = $this->getCache()->getCalculation(
                 $calculation_order,
                 $this->token,
@@ -594,10 +602,6 @@ class dostavistaShipping extends waShipping
         }
 
         try {
-            /** @var string $departure_datetime Y-m-d H:i:s */
-            $departure_datetime = $this->getPackageProperty('departure_datetime');
-            /** @var string|null $timezone like 'Moscow/Russia' */
-            $timezone = $this->getPackageProperty('shop_time_zone');
             $delivery_times = $this->getDeliveryTimes($departure_datetime, $timezone);
         } catch (waException $e) {
             $this->getLogger()->error($e->getMessage());
@@ -791,7 +795,7 @@ class dostavistaShipping extends waShipping
         return new dostavistaShippingApiEntityMoney();
     }
 
-    protected function createDostavistaOrder(): dostavistaShippingApiEntityOrder
+    protected function createDostavistaOrder(?array $same_day_interval = null): dostavistaShippingApiEntityOrder
     {
         $order = new dostavistaShippingApiEntityOrder;
         $order->setMatter('Shopping');
@@ -815,6 +819,19 @@ class dostavistaShipping extends waShipping
 
         if ($this->transport_type) {
             $order->setVehicleType(new dostavistaShippingApiEntityEnumVehicleType($this->transport_type));
+        }
+
+        if ($same_day_interval !== null) {
+            $order->setType(
+                new dostavistaShippingApiEntityEnumOrderType(dostavistaShippingApiEntityEnumOrderType::SAME_DAY)
+            );
+            $destination_point
+                ->setRequiredStartDatetime(
+                    new dostavistaShippingApiEntityTimestamp(new DateTimeImmutable($same_day_interval['required_start_datetime']))
+                )
+                ->setRequiredFinishDatetime(
+                    new dostavistaShippingApiEntityTimestamp(new DateTimeImmutable($same_day_interval['required_finish_datetime']))
+                );
         }
 
         $order->setPoints($start_point, $destination_point);
@@ -889,6 +906,84 @@ class dostavistaShipping extends waShipping
             return $this->logger;
         }
         return $this->logger = new NullLogger();
+    }
+
+    /**
+     * @throws waException
+     */
+    protected function getDeliveryIntervals(): array
+    {
+        return $this->getDostavistaApiClient()->DeliveryIntervals();
+    }
+
+    protected function resolveSameDayInterval(array $shipping_params, ?string $departure_datetime): ?array
+    {
+        $desired_delivery = $shipping_params['desired_delivery'] ?? [];
+        if (!empty($desired_delivery['date'])) {
+            $calc_date = $desired_delivery['date'];
+        } elseif ($departure_datetime) {
+            $calc_date = date('Y-m-d', strtotime($departure_datetime));
+        } else {
+            return null;
+        }
+
+        if ($calc_date !== date('Y-m-d')) {
+            return null;
+        }
+
+        try {
+            $response = $this->getDeliveryIntervals();
+        } catch (Exception $e) {
+            $this->getLogger()->info('Ошибка получения интервалов same_day: ' . $e->getMessage());
+            return null;
+        }
+
+        if (empty($response['delivery_intervals'])
+            || (isset($response['is_successful']) && !$response['is_successful'])
+        ) {
+            return null;
+        }
+
+        $desired_interval_str = !empty($desired_delivery['interval']) ? $desired_delivery['interval'] : null;
+        $chosen = $this->chooseSameDayInterval($response['delivery_intervals'], $desired_interval_str);
+
+        if ($chosen === null) {
+            return null;
+        }
+
+        try {
+            $start_dt = new DateTimeImmutable($chosen['required_start_datetime']);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if ($start_dt <= new DateTimeImmutable()) {
+            return null;
+        }
+
+        return $chosen;
+    }
+
+    private function chooseSameDayInterval(array $intervals, ?string $desired_interval_str): ?array
+    {
+        if (empty($desired_interval_str)) {
+            return $intervals[0] ?? null;
+        }
+
+        $desired_start = trim(explode('-', $desired_interval_str)[0] ?? '');
+
+        foreach ($intervals as $interval) {
+            try {
+                $interval_start_time = (new DateTimeImmutable($interval['required_start_datetime']))->format('H:i');
+            } catch (Exception $e) {
+                continue;
+            }
+            if ($interval_start_time >= $desired_start) {
+                return $interval;
+            }
+        }
+
+        return null;
     }
 
     private function isWeightAllowed(): bool

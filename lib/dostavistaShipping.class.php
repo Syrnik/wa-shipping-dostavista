@@ -594,7 +594,9 @@ class dostavistaShipping extends waShipping
         }
 
         try {
+            /** @var string $departure_datetime Y-m-d H:i:s */
             $departure_datetime = $this->getPackageProperty('departure_datetime');
+            /** @var string|null $timezone like 'Moscow/Russia' */
             $timezone = $this->getPackageProperty('shop_time_zone');
             $delivery_times = $this->getDeliveryTimes($departure_datetime, $timezone);
         } catch (waException $e) {

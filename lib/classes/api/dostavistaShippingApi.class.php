@@ -52,7 +52,7 @@ class dostavistaShippingApi
      */
     public function CalculateOrder(dostavistaShippingApiEntityOrder $order): array
     {
-        return $this->_query(new dostavistaShippingApiQueryCalculateOrder($order));
+        return $this->query(new dostavistaShippingApiQueryCalculateOrder($order));
     }
 
     /**
@@ -60,7 +60,7 @@ class dostavistaShippingApi
      * @return array
      * @throws waException
      */
-    protected function _query(dostavistaShippingApiQueryInterface $query): array
+    protected function query(dostavistaShippingApiQueryInterface $query): array
     {
         $headers = ['X-DV-Auth-Token' => $this->getApiToken()];
 

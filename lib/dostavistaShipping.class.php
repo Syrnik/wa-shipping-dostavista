@@ -547,8 +547,7 @@ class dostavistaShipping extends waShipping
                     "Запрос: \n" . waUtils::jsonEncode($calculation_order, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
                 );
                 $t = microtime(true);
-                $response = (new dostavistaShippingApi($this->token, 'test' === $this->api_server))
-                    ->CalculateOrder($calculation_order);
+                $response = $this->getDostavistaApiClient()->CalculateOrder($calculation_order);
                 $this->getLogger()->info("Ответ от сервера получен за " . round(microtime(true) - $t, 3) . ' с.');
                 $this->getLogger()->debug(
                     "Ответ сервера:\n" . waUtils::jsonEncode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
@@ -683,6 +682,14 @@ class dostavistaShipping extends waShipping
         }
 
         return null;
+    }
+
+    /**
+     * @return dostavistaShippingApi
+     */
+    public function getDostavistaApiClient(): dostavistaShippingApi
+    {
+        return new dostavistaShippingApi($this->token, 'test' === $this->api_server);
     }
 
     /**

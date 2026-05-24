@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'syrnik/shipping-dostavist',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-develop',
+        'version' => 'dev-develop',
+        'reference' => '62b354fc3abd9d3f8435521de365cca1238a1638',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
@@ -56,9 +56,9 @@
             'dev_requirement' => false,
         ),
         'syrnik/shipping-dostavist' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-develop',
+            'version' => 'dev-develop',
+            'reference' => '62b354fc3abd9d3f8435521de365cca1238a1638',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),

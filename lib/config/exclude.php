@@ -1,12 +1,14 @@
 <?php
-return array(
+return [
     '*/README.md',
     '*/LICENSE.txt',
+    '*/LICENSE',
     '*/CHANGELOG.md',
     '*/CONTRIBUTING.md',
     '*/contributors.txt',
     'README.md',
     'LICENSE.txt',
+    'LICENSE',
     'CHANGELOG.md',
     'CONTRIBUTING.md',
     'contributors.txt',
@@ -39,4 +41,5 @@ return array(
     '.editorconfig',
     '*/.editorconfig',
     '*/tests/*',
-);
+    'compress-system-plugin.php'
+];

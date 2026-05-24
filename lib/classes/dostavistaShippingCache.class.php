@@ -29,8 +29,12 @@ class dostavistaShippingCache
      * @return void
      * @throws waException
      */
-    public function saveCalculation(array $result, dostavistaShippingApiEntityOrder $order, string $token, bool $test_mode): void
-    {
+    public function saveCalculation(
+        array $result,
+        dostavistaShippingApiEntityOrder $order,
+        string $token,
+        bool $test_mode
+    ): void {
         $cache_key = $this->createCacheKey($order, $token, $test_mode);
         $this->cache->set($cache_key, $result, self::CALCULATION_TTL, self::CALCULATION_GROUP);
     }
@@ -54,18 +58,17 @@ class dostavistaShippingCache
      */
     protected function createCacheKey(...$parts): string
     {
-        if (!$parts) throw new waException('Невозможно сгенерировать ключ кэша для пустого списка параметров');
+        if (!$parts) {
+            throw new waException('Невозможно сгенерировать ключ кэша для пустого списка параметров');
+        }
         array_walk($parts, function (&$part): void {
             if (is_scalar($part)) {
                 $part = (string)$part;
-            }
-            elseif ($part instanceof JsonSerializable) {
+            } elseif ($part instanceof JsonSerializable) {
                 $part = waUtils::jsonEncode($part, JSON_UNESCAPED_UNICODE);
-            }
-            elseif (is_object($part) && method_exists($part, '__toString')) {
+            } elseif (is_object($part) && method_exists($part, '__toString')) {
                 $part = (string)$part;
-            }
-            elseif (is_array($part)) {
+            } elseif (is_array($part)) {
                 $part = waUtils::jsonEncode($part, JSON_UNESCAPED_UNICODE);
             } else {
                 $part = '';

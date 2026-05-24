@@ -328,7 +328,7 @@ class dostavistaShipping extends waShipping
     }
 
     /**
-     * @return array{timestamp:int|array<int>, estimate:string}
+     * @return array{timestamp:int|int[]|null, estimate:string|null, delivery_date:string|string[]|null}
      * @throws waException
      */
     protected function getDeliveryTimes(string $departure_datetime, ?string $timezone): array
@@ -607,8 +607,14 @@ class dostavistaShipping extends waShipping
             $this->getLogger()->error($e->getMessage());
             return 'Ошибка расчёта';
         }
-        $result[self::VARIANT_ID]['est_delivery'] = $delivery_times['estimate'];
-        $result[self::VARIANT_ID]['delivery_date'] = $delivery_times['delivery_date'];
+
+        if (!empty($delivery_times['estimate'])) {
+            $result[self::VARIANT_ID]['est_delivery'] = $delivery_times['estimate'];
+        }
+
+        if (!empty($delivery_times['delivery_datetime'])) {
+            $result[self::VARIANT_ID]['delivery_date'] = $delivery_times['delivery_date'];
+        }
 
 
         $setting = $this->customer_interval;
@@ -827,10 +833,14 @@ class dostavistaShipping extends waShipping
             );
             $destination_point
                 ->setRequiredStartDatetime(
-                    new dostavistaShippingApiEntityTimestamp(new DateTimeImmutable($same_day_interval['required_start_datetime']))
+                    new dostavistaShippingApiEntityTimestamp(
+                        new DateTimeImmutable($same_day_interval['required_start_datetime'])
+                    )
                 )
                 ->setRequiredFinishDatetime(
-                    new dostavistaShippingApiEntityTimestamp(new DateTimeImmutable($same_day_interval['required_finish_datetime']))
+                    new dostavistaShippingApiEntityTimestamp(
+                        new DateTimeImmutable($same_day_interval['required_finish_datetime'])
+                    )
                 );
         }
 
@@ -913,7 +923,16 @@ class dostavistaShipping extends waShipping
      */
     protected function getDeliveryIntervals(): array
     {
-        return $this->getDostavistaApiClient()->DeliveryIntervals();
+        $intervals = $this->getCache()->getDeliveryIntervals();
+        if ($intervals) {
+            return $intervals;
+        }
+
+
+        $intervals = $this->getDostavistaApiClient()->DeliveryIntervals();
+        $this->getCache()->saveDeliveryIntervals(null, $intervals);
+
+        return $intervals;
     }
 
     protected function resolveSameDayInterval(array $shipping_params, ?string $departure_datetime): ?array

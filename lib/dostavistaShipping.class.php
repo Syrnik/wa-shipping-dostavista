@@ -875,7 +875,7 @@ class dostavistaShipping extends waShipping
         if (isset($this->cache)) {
             return $this->cache;
         }
-        $cache = wa()->getCache('dostavista_shipping', 'webasyst');
+        $cache = wa()->getCache(dostavistaShippingCache::CACHE_CONFIG, 'webasyst');
         if (!$cache) {
             $cache = wa()->getCache('default', 'webasyst');
         }

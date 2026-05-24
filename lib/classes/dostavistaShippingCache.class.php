@@ -12,6 +12,7 @@ class dostavistaShippingCache
     protected const MAIN_GROUP = 'shipping/dostavista';
     protected const CALCULATION_GROUP = self::MAIN_GROUP . '/calculations';
     protected const CALCULATION_TTL = 600; // 10 min
+    public const CACHE_CONFIG = 'dostavista_cache';
 
     protected waCache $cache;
 
@@ -20,12 +21,27 @@ class dostavistaShippingCache
         $this->cache = $cache;
     }
 
+    /**
+     * @param array $result
+     * @param dostavistaShippingApiEntityOrder $order
+     * @param string $token
+     * @param bool $test_mode
+     * @return void
+     * @throws waException
+     */
     public function saveCalculation(array $result, dostavistaShippingApiEntityOrder $order, string $token, bool $test_mode): void
     {
         $cache_key = $this->createCacheKey($order, $token, $test_mode);
         $this->cache->set($cache_key, $result, self::CALCULATION_TTL, self::CALCULATION_GROUP);
     }
 
+    /**
+     * @param dostavistaShippingApiEntityOrder $order
+     * @param string $token
+     * @param bool $test_mode
+     * @return array|null
+     * @throws waException
+     */
     public function getCalculation(dostavistaShippingApiEntityOrder $order, string $token, bool $test_mode): ?array
     {
         return $this->cache->get($this->createCacheKey($order, $token, $test_mode), self::CALCULATION_GROUP);
